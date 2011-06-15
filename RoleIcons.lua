@@ -10,7 +10,7 @@ local defaults = {
 local settings = defaults
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE] 
 RI_svnrev = {}
-RI_svnrev["RoleIcons.lua"] = tonumber(("$Revision: 25 $"):match("%d+"))
+RI_svnrev["RoleIcons.lua"] = tonumber(("$Revision$"):match("%d+"))
 
 local iconsz = 19 
 local role_tex_file = "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES.blp"

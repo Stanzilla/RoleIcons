@@ -5,7 +5,7 @@
 ## Version: @project-version@
 ## X-Build: @project-revision@
 ## X-ReleaseDate: @project-date-iso@
-## X-Revision: $Revision: 23 $
+## X-Revision: $Revision$
 ## LoadManagers: AddonLoader
 ## X-LoadOn-Always: delayed
 
