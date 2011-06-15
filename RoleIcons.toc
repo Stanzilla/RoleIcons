@@ -1,0 +1,13 @@
+## Interface: 40100
+## Title: RoleIcons 
+## Notes: Adds party/raid role icons in useful places
+## Author: oscarucb
+## Version: @project-version@
+## X-Build: @project-revision@
+## X-ReleaseDate: @project-date-iso@
+## X-Revision: $Revision: 23 $
+## LoadManagers: AddonLoader
+## X-LoadOn-Always: delayed
+
+locale.lua
+RoleIcons.lua
