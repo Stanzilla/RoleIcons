@@ -12,6 +12,13 @@ local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE]
 RI_svnrev = {}
 RI_svnrev["RoleIcons.lua"] = tonumber(("$Revision$"):match("%d+"))
 
+local chats = { 
+	CHAT_MSG_SAY = 1, CHAT_MSG_YELL = 1, CHAT_MSG_WHISPER = 1,
+	CHAT_MSG_PARTY = 1, CHAT_MSG_PARTY_LEADER = 1,
+	CHAT_MSG_RAID = 1, CHAT_MSG_RAID_LEADER = 1, CHAT_MSG_RAID_WARNING = 1, 
+	CHAT_MSG_BATTLEGROUND_LEADER = 1, CHAT_MSG_BATTLEGROUND = 1,
+	}
+
 local iconsz = 19 
 local role_tex_file = "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES.blp"
 local role_t = "\124T"..role_tex_file..":%d:%d:"
@@ -97,6 +104,28 @@ local function UpdateRGF()
   end
 end
 
+function ChatFilter(self, event, message, sender, ...)
+  local role = UnitGroupRolesAssigned(sender)
+  if (role and role ~= "NONE") then
+    if not string.find(message,role_tex_file,1,true) then
+      message = getRoleTex(role,0).." "..message
+    end
+  end
+  return false, message, sender, ...
+end
+
+local GetColoredName_orig = _G.GetColoredName
+function GetColoredName_hook(event, arg1, arg2, ...)
+  local ret = GetColoredName_orig(event, arg1, arg2, ...)
+  if chats[event] then
+    local role = UnitGroupRolesAssigned(arg2)
+    if (role and role ~= "NONE") then
+        ret = getRoleTex(role,0)..""..ret
+    end
+  end
+  return ret 
+end
+
 local reg = {}
 local function RegisterHooks()
   if RaidGroupFrame_Update and not reg["rgb"] then
@@ -121,6 +150,16 @@ local function RegisterHooks()
      -- add the set role menu to the raid screen popup
      table.insert(UnitPopupMenus["RAID"],1,"SELECT_ROLE")
      reg["upm"] = true
+  end
+  if false and not reg["chats"] then
+     for c,_ in pairs(chats) do
+       ChatFrame_AddMessageEventFilter(c, ChatFilter)
+     end
+     reg["chats"] = true
+  end
+  if GetColoredName and not reg["gcn"] then
+     _G.GetColoredName = GetColoredName_hook
+     reg["gcn"] = true
   end
 end
 
