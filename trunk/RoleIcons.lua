@@ -97,26 +97,30 @@ local function UpdateRGF()
   end
 end
 
-local rgb_reg = false
-local gtt_reg = false
-local hb_reg = false
+local reg = {}
 local function RegisterHooks()
-  if RaidGroupFrame_Update and not rgb_reg then
+  if RaidGroupFrame_Update and not reg["rgb"] then
     debug("Registering RaidGroupFrame_Update")
     hooksecurefunc("RaidGroupFrame_Update",UpdateRGF)
     hooksecurefunc("RaidGroupFrame_UpdateLevel",UpdateRGF)
-    rgb_reg = true
+    reg["rgb"] = true
   end
-  if GameTooltip and not gtt_reg then
+  if GameTooltip and not reg["gtt"] then
     debug("Registering GameTooltip")
     --hooksecurefunc(GameTooltip,"SetUnit", UpdateTT)
     GameTooltip:HookScript("OnTooltipSetUnit", UpdateTT)
     hooksecurefunc(GameTooltipTextLeft1,"SetFormattedText", function() UpdateTT(GameTooltip) end)
     hooksecurefunc(GameTooltipTextLeft1,"SetText", function() UpdateTT(GameTooltip) end)
-    gtt_reg = true
+    reg["gtt"] = true
   end
-  if HealBot_Action_RefreshTooltip and not hb_reg then
+  if HealBot_Action_RefreshTooltip and not reg["hb"] then
     hooksecurefunc("HealBot_Action_RefreshTooltip", function(unit) UpdateTT(GameTooltip,unit) end)
+    reg["hb"] = true
+  end
+  if not reg["upm"] then
+     -- add the set role menu to the raid screen popup
+     table.insert(UnitPopupMenus["RAID"],1,"SELECT_ROLE")
+     reg["upm"] = true
   end
 end
 
