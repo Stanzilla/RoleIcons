@@ -135,7 +135,7 @@ local function UpdateRGF()
 end
 
 function ChatFilter(self, event, message, sender, ...)
-  if not settings.chat then return end
+  if not settings.chat then return false end
   local role = UnitGroupRolesAssigned(sender)
   if (role and role ~= "NONE") then
     if not string.find(message,role_tex_file,1,true) then
@@ -220,7 +220,9 @@ frame:SetScript("OnEvent", OnEvent);
 SLASH_ROLEICONS1 = L["/ri"]
 SlashCmdList["ROLEICONS"] = function(msg)
         local cmd = msg:lower()
-        if settings[cmd] ~= nil then
+	if cmd == "check" then
+	  InitiateRolePoll() 
+        elseif settings[cmd] ~= nil then
           settings[cmd] = not settings[cmd]
           chatMsg(cmd..L[" set to "]..(settings[cmd] and YES or NO))
 	  RegisterHooks()
@@ -228,11 +230,13 @@ SlashCmdList["ROLEICONS"] = function(msg)
 	  local usage = ""
           chatMsg(LaddonName.." "..addon.version)
 	  for c,_ in pairs(settings) do
-	    usage = usage..c.." "
+	    usage = usage.." | "..c
 	  end
-          chatMsg(SLASH_ROLEICONS1.." [ "..usage.."]")
+          chatMsg(SLASH_ROLEICONS1.." [ check"..usage.." ]")
         end
 end
+SLASH_ROLECHECK1 = L["/rolecheck"]
+SlashCmdList["ROLECHECK"] = function(msg) InitiateRolePoll() end
 
 function addon:SetupVersion()
    local svnrev = 0
