@@ -5,9 +5,12 @@ RoleIcons = {}
 local addon = RoleIcons
 local _G = getfenv(0)
 local defaults = { 
-  debug = true,
+  raid = true,
+  tooltip = true,
+  chat = true,
+  debug = false,
 }
-local settings = defaults
+local settings
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE] 
 RI_svnrev = {}
 RI_svnrev["RoleIcons.lua"] = tonumber(("$Revision$"):match("%d+"))
@@ -46,7 +49,7 @@ local function chatMsg(msg)
      DEFAULT_CHAT_FRAME:AddMessage(LaddonName..": "..msg)
 end
 local function debug(msg)
-  if settings.debug then
+  if settings and settings.debug then
      chatMsg(msg)
   end
 end
@@ -55,6 +58,7 @@ local frame = CreateFrame("Button", addonName.."HiddenFrame", UIParent)
 frame:RegisterEvent("ADDON_LOADED");
 
 local function UpdateTT(tt, unit)
+  if not settings.tooltip then return end
   unit = unit or (tt and tt.GetUnit and tt:GetUnit())
   if not unit then return end
   local role = UnitGroupRolesAssigned(unit)
@@ -75,6 +79,7 @@ local function UpdateTT(tt, unit)
 end
 
 local function UpdateRGF()
+  if not settings.raid then return end
   for i=1,40 do
     local btn = _G["RaidGroupButton"..i]
     if btn and btn.unit and btn.subframes and btn.subframes.level and btn:IsVisible() then
@@ -105,6 +110,7 @@ local function UpdateRGF()
 end
 
 function ChatFilter(self, event, message, sender, ...)
+  if not settings.chat then return end
   local role = UnitGroupRolesAssigned(sender)
   if (role and role ~= "NONE") then
     if not string.find(message,role_tex_file,1,true) then
@@ -114,10 +120,10 @@ function ChatFilter(self, event, message, sender, ...)
   return false, message, sender, ...
 end
 
-local GetColoredName_orig = _G.GetColoredName
+local GetColoredName_orig
 function GetColoredName_hook(event, arg1, arg2, ...)
   local ret = GetColoredName_orig(event, arg1, arg2, ...)
-  if chats[event] then
+  if chats[event] and settings.chat then
     local role = UnitGroupRolesAssigned(arg2)
     if (role and role ~= "NONE") then
         ret = getRoleTex(role,0)..""..ret
@@ -128,13 +134,14 @@ end
 
 local reg = {}
 local function RegisterHooks()
-  if RaidGroupFrame_Update and not reg["rgb"] then
+  if not settings then return end
+  if settings.raid and RaidGroupFrame_Update and not reg["rgb"] then
     debug("Registering RaidGroupFrame_Update")
     hooksecurefunc("RaidGroupFrame_Update",UpdateRGF)
     hooksecurefunc("RaidGroupFrame_UpdateLevel",UpdateRGF)
     reg["rgb"] = true
   end
-  if GameTooltip and not reg["gtt"] then
+  if settings.tooltip and GameTooltip and not reg["gtt"] then
     debug("Registering GameTooltip")
     --hooksecurefunc(GameTooltip,"SetUnit", UpdateTT)
     GameTooltip:HookScript("OnTooltipSetUnit", UpdateTT)
@@ -142,22 +149,23 @@ local function RegisterHooks()
     hooksecurefunc(GameTooltipTextLeft1,"SetText", function() UpdateTT(GameTooltip) end)
     reg["gtt"] = true
   end
-  if HealBot_Action_RefreshTooltip and not reg["hb"] then
+  if settings.tooltip and HealBot_Action_RefreshTooltip and not reg["hb"] then
     hooksecurefunc("HealBot_Action_RefreshTooltip", function(unit) UpdateTT(GameTooltip,unit) end)
     reg["hb"] = true
   end
-  if not reg["upm"] then
+  if settings.raid and not reg["upm"] then
      -- add the set role menu to the raid screen popup
      table.insert(UnitPopupMenus["RAID"],1,"SELECT_ROLE")
      reg["upm"] = true
   end
-  if false and not reg["chats"] then
+  if false and settings.chat and not reg["chats"] then
      for c,_ in pairs(chats) do
        ChatFrame_AddMessageEventFilter(c, ChatFilter)
      end
      reg["chats"] = true
   end
-  if GetColoredName and not reg["gcn"] then
+  if settings.chat and GetColoredName and not reg["gcn"] then
+     GetColoredName_orig = _G.GetColoredName
      _G.GetColoredName = GetColoredName_hook
      reg["gcn"] = true
   end
@@ -166,6 +174,13 @@ end
 local function OnEvent(frame, event, name, ...)
   if event == "ADDON_LOADED" and name == addonName then
      debug("ADDON_LOADED: "..name)
+     RoleIconsDB = RoleIconsDB or {}
+     settings = RoleIconsDB
+     for k,v in pairs(defaults) do
+       if settings[k] == nil then
+         settings[k] = defaults[k]
+       end
+     end
      addon:SetupVersion()
      RegisterHooks() 
   elseif event == "ADDON_LOADED" and name == "Blizzard_RaidUI" then
@@ -180,12 +195,17 @@ frame:SetScript("OnEvent", OnEvent);
 SLASH_ROLEICONS1 = L["/ri"]
 SlashCmdList["ROLEICONS"] = function(msg)
         local cmd = msg:lower()
-        if cmd == L["debug"] then
-          chatMsg(L["debug toggled"])
-          settings.debug = not settings.debug
+        if settings[cmd] ~= nil then
+          settings[cmd] = not settings[cmd]
+          chatMsg(cmd..L[" set to "]..(settings[cmd] and YES or NO))
+	  RegisterHooks()
         else
+	  local usage = ""
           chatMsg(LaddonName.." "..addon.version)
-          chatMsg(SLASH_ROLEICONS1.." [ "..L["debug"].." ]")
+	  for c,_ in pairs(settings) do
+	    usage = usage..c.." "
+	  end
+          chatMsg(SLASH_ROLEICONS1.." [ "..usage.."]")
         end
 end
 
