@@ -81,6 +81,21 @@ end
 
 local function UpdateRGF()
   if not settings.raid then return end
+  if IsRaidOfficer() then
+     if not addon.rolecheckbtn then
+       local btn = CreateFrame("Button","RaidIconsRoleCheckBtn",RaidFrame,"UIPanelButtonTemplate")
+       btn:SetSize(RaidFrameRaidBrowserButton:GetSize())
+       btn:SetText(ROLE_POLL)
+       btn:SetPoint("BOTTOMLEFT", RaidFrameRaidBrowserButton, "TOPLEFT", 0, 2)
+       btn:SetScript("OnClick", function() InitiateRolePoll() end)
+       btn:SetNormalFontObject(GameFontNormalSmall)
+       btn:SetHighlightFontObject(GameFontHighlightSmall)
+       addon.rolecheckbtn = btn
+     end
+     addon.rolecheckbtn:Show()
+  elseif addon.rolecheckbtn then
+     addon.rolecheckbtn:Hide()
+  end
   for i=1,40 do
     local btn = _G["RaidGroupButton"..i]
     if btn and btn.unit and btn.subframes and btn.subframes.level and btn:IsVisible() then
