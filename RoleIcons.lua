@@ -23,6 +23,7 @@ local chats = {
 	}
 
 local iconsz = 19 
+local riconsz = iconsz
 local role_tex_file = "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES.blp"
 local role_t = "\124T"..role_tex_file..":%d:%d:"
 local role_tex = {
@@ -92,16 +93,24 @@ local function UpdateRGF()
              lvl = UnitLevel(btn.name)
            end
            if lvl == maxlvl or lvl == 0 then -- sometimes returns 0 during moves
-             btn.subframes.level:SetText(getRoleTex(role,iconsz))
              btn.subframes.level:SetDrawLayer("OVERLAY")
+	     while true do
+               btn.subframes.level:SetText(getRoleTex(role,riconsz))
+	       if btn.subframes.level:IsTruncated() then
+	         riconsz = riconsz - 1
+		 debug("Reduced iconsz to: "..riconsz)
+	       else
+	         break
+	       end
+	     end
            else
              --print(unit.." "..lvl)
              local class = UnitClass(unit)
              if not class or #class == 0 then
                 class = UnitClass(btn.name)
              end
-             btn.subframes.class:SetText(getRoleTex(role,iconsz).." "..class)
              btn.subframes.class:SetDrawLayer("OVERLAY")
+             btn.subframes.class:SetText(getRoleTex(role,riconsz).." "..class)
            end
          end
        end
