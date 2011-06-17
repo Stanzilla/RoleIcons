@@ -323,7 +323,7 @@ local function RegisterHooks()
 end
 
 local function OnEvent(frame, event, name, ...)
-  if event == "ADDON_LOADED" and name == addonName then
+  if event == "ADDON_LOADED" and string.upper(name) == string.upper(addonName) then
      debug("ADDON_LOADED: "..name)
      RoleIconsDB = RoleIconsDB or {}
      settings = RoleIconsDB
