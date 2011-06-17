@@ -10,6 +10,7 @@ local defaults = {
   chat = true,
   debug = false,
   classbuttons = true,
+  rolebuttons = true,
 }
 local settings
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE] 
@@ -47,6 +48,12 @@ function getRoleTex(role,size)
   end
   return str
 end
+function getRoleTexCoord(role)
+  local str = role_tex[role]
+  if not str or #str == 0 then return nil end
+  local a,b,c,d = string.match(str, ":(%d+):(%d+):(%d+):(%d+)%\124t")
+  return a/64,b/64,c/64,d/64
+end
 
 local function chatMsg(msg)
      DEFAULT_CHAT_FRAME:AddMessage(LaddonName..": "..msg)
@@ -81,8 +88,11 @@ local function UpdateTT(tt, unit)
   end
 end
 
+local rolecnt = {}
+local rolecall = {}
+
 local function UpdateRGF()
-  if not settings.raid then return end
+  if not RaidFrame then return end
   if IsRaidOfficer() then
      if not addon.rolecheckbtn then
        local btn = CreateFrame("Button","RaidIconsRoleCheckBtn",RaidFrame,"UIPanelButtonTemplate")
@@ -98,6 +108,8 @@ local function UpdateRGF()
   elseif addon.rolecheckbtn then
      addon.rolecheckbtn:Hide()
   end
+  wipe(rolecnt)
+  wipe(rolecall)
   for i=1,40 do
     local btn = _G["RaidGroupButton"..i]
     if btn and btn.unit and btn.subframes and btn.subframes.level and btn:IsVisible() then
@@ -105,11 +117,13 @@ local function UpdateRGF()
        if unit then
          local role = UnitGroupRolesAssigned(unit)
          if role and role ~= "NONE" then
+	   rolecnt[role] = (rolecnt[role] or 0) + 1
+	   rolecall[role] = ((rolecall[role] and rolecall[role]..", ") or "")..UnitName(unit)
            local lvl = UnitLevel(unit)
            if not lvl or lvl == 0 then
              lvl = UnitLevel(btn.name)
            end
-           if lvl == maxlvl or lvl == 0 then -- sometimes returns 0 during moves
+           if settings.raid and lvl == maxlvl or lvl == 0 then -- sometimes returns 0 during moves
              btn.subframes.level:SetDrawLayer("OVERLAY")
 	     while true do
                btn.subframes.level:SetText(getRoleTex(role,riconsz))
@@ -120,7 +134,7 @@ local function UpdateRGF()
 	         break
 	       end
 	     end
-           else
+           elseif settings.raid then
              --print(unit.." "..lvl)
              local class = UnitClass(unit)
              if not class or #class == 0 then
@@ -131,6 +145,21 @@ local function UpdateRGF()
            end
          end
        end
+       if not InCombatLockdown() then
+         -- extra bonus, make the secure frames targettable
+         btn:SetAttribute("type", "target")
+         btn:SetAttribute("unit", btn.unit)
+       end
+    end
+  end
+  for role,btn in pairs(addon.rolebuttons) do
+    if settings.rolebuttons then  
+      btn.rolecnt = rolecnt[role] or 0
+      btn.rolecall = rolecall[role]
+      _G[btn:GetName().."Count"]:SetText(btn.rolecnt)
+      btn:Show()
+    else
+      btn:Hide()
     end
   end
 end
@@ -195,10 +224,42 @@ local function RegisterHooks()
      _G.GetColoredName = GetColoredName_hook
      reg["gcn"] = true
   end
+  if settings.classbuttons and RaidClassButton10 then
+    RaidClassButton10:ClearAllPoints()
+    RaidClassButton10:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",-36,95)
+  end
+  if settings.rolebuttons and RaidClassButton1 and not addon.rolebuttons then
+    addon.rolebuttons = {}
+    local last
+    for _,role in ipairs({"TANK","HEALER","DAMAGER"}) do
+      local btn = CreateFrame("Button", addonName.."RoleButton"..role, RaidFrame, "RaidClassButtonTemplate")
+      local icon = _G[btn:GetName().."IconTexture"];
+      icon:SetTexture(role_tex_file)
+      icon:SetTexCoord(getRoleTexCoord(role))
+      btn:SetScript("OnLoad",function(self) end)
+      btn:SetScript("OnEnter",function(self) 
+        GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
+        GameTooltip:SetText(_G[role] .. " ("..(btn.rolecnt or 0)..")") 
+	if btn.rolecall then
+          GameTooltip:AddLine(btn.rolecall) 
+	end
+	GameTooltip:Show()
+      end)
+      btn:ClearAllPoints()
+      if last then
+        btn:SetPoint("TOPLEFT", last, "BOTTOMLEFT",0,-4)
+      end
+      btn:SetScale(1.6)
+      btn:Show()
+      addon.rolebuttons[role] = btn
+      last = btn
+    end
+    addon.rolebuttons["TANK"]:SetPoint("TOPLEFT",FriendsFrameCloseButton,"BOTTOMRIGHT",-4,16)
+  end
   for i=1,20 do
     local btn = _G["RaidClassButton"..i]
     if btn then 
-      if settings.classbuttons then
+      if settings.classbuttons and i <= 10 then
         btn:Show()
       else
         btn:Hide()
@@ -251,6 +312,7 @@ SlashCmdList["ROLEICONS"] = function(msg)
           settings[cmd] = not settings[cmd]
           chatMsg(cmd..L[" set to "]..(settings[cmd] and YES or NO))
 	  RegisterHooks()
+	  UpdateRGF()
         else
 	  local usage = ""
           chatMsg(LaddonName.." "..addon.version)
