@@ -153,13 +153,23 @@ local function UpdateRGF()
     end
   end
   for role,btn in pairs(addon.rolebuttons) do
-    if settings.rolebuttons then  
+    if settings.rolebuttons and UnitInRaid("player") then  
       btn.rolecnt = rolecnt[role] or 0
       btn.rolecall = rolecall[role]
       _G[btn:GetName().."Count"]:SetText(btn.rolecnt)
       btn:Show()
     else
       btn:Hide()
+    end
+  end
+  for i=1,20 do
+    local btn = _G["RaidClassButton"..i]
+    if btn then 
+      if settings.classbuttons and UnitInRaid("player") and i <= 10 then
+        btn:Show()
+      else
+        btn:Hide()
+      end
     end
   end
 end
@@ -255,16 +265,6 @@ local function RegisterHooks()
       last = btn
     end
     addon.rolebuttons["TANK"]:SetPoint("TOPLEFT",FriendsFrameCloseButton,"BOTTOMRIGHT",-4,16)
-  end
-  for i=1,20 do
-    local btn = _G["RaidClassButton"..i]
-    if btn then 
-      if settings.classbuttons and i <= 10 then
-        btn:Show()
-      else
-        btn:Hide()
-      end
-    end
   end
   if RaidClassButton_OnEnter and not reg["rcboe"] then
     hooksecurefunc("RaidClassButton_OnEnter",function() 
