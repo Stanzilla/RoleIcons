@@ -1,4 +1,4 @@
-package-as: roleicons
+package-as: RoleIcons
 
 enable-nolib-creation: no
 
