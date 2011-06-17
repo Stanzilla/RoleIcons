@@ -88,6 +88,22 @@ local function UpdateTT(tt, unit)
   end
 end
 
+function RoleMenuInitialize(self)
+        UnitPopup_ShowMenu(UIDROPDOWNMENU_OPEN_MENU, "SELECT_ROLE", self.unit, self.name, self.id);
+end
+
+function ShowRoleMenu(self)
+        HideDropDownMenu(1);
+        if ( self.id and self.name ) then
+                FriendsDropDown.name = self.name;
+                FriendsDropDown.id = self.id;
+                FriendsDropDown.unit = self.unit;
+                FriendsDropDown.initialize = RoleMenuInitialize;
+                FriendsDropDown.displayMode = "MENU";
+                ToggleDropDownMenu(1, nil, FriendsDropDown, "cursor");
+        end
+end
+
 local rolecnt = {}
 local rolecall = {}
 
@@ -149,6 +165,16 @@ local function UpdateRGF()
          -- extra bonus, make the secure frames targettable
          btn:SetAttribute("type", "target")
          btn:SetAttribute("unit", btn.unit)
+       end
+       addon.btnhook = addon.btnhook or {}
+       if not addon.btnhook[btn] then
+         btn:RegisterForClicks("AnyUp")
+         btn:HookScript("OnClick", function(self, button)
+	   if button == "MiddleButton" then
+	     ShowRoleMenu(self)
+	   end
+	 end)
+	 addon.btnhook[btn] = true
        end
     end
   end
