@@ -11,6 +11,7 @@ local defaults = {
   debug = false,
   classbuttons = true,
   rolebuttons = true,
+  autorole = true,
 }
 local settings
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE] 
@@ -64,8 +65,19 @@ local function debug(msg)
   end
 end
 
+local function myDefaultRole()
+  local tabIndex = GetPrimaryTalentTree(false, false)
+  local role1,role2 = GetTalentTreeRoles(tabIndex,false,false)
+  if role2 then return nil -- more than one possibility (eg feral druid)
+  else return role1 
+  end
+end
+
 local frame = CreateFrame("Button", addonName.."HiddenFrame", UIParent)
 frame:RegisterEvent("ADDON_LOADED");
+frame:RegisterEvent("ROLE_POLL_BEGIN");
+frame:RegisterEvent("RAID_ROSTER_UPDATE");
+frame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED");
 
 local function UpdateTT(tt, unit)
   if not settings.tooltip then return end
@@ -178,6 +190,7 @@ local function UpdateRGF()
        end
     end
   end
+  if addon.rolebuttons then
   for role,btn in pairs(addon.rolebuttons) do
     if settings.rolebuttons and UnitInRaid("player") then  
       btn.rolecnt = rolecnt[role] or 0
@@ -187,6 +200,7 @@ local function UpdateRGF()
     else
       btn:Hide()
     end
+  end
   end
   for i=1,20 do
     local btn = _G["RaidClassButton"..i]
@@ -325,6 +339,26 @@ local function OnEvent(frame, event, name, ...)
      RegisterHooks() 
   elseif event == "ADDON_LOADED" then
      --debug("ADDON_LOADED: "..name)
+  elseif event == "ROLE_POLL_BEGIN" or 
+         event == "RAID_ROSTER_UPDATE" or 
+	 event == "ACTIVE_TALENT_GROUP_CHANGED" then
+     if settings.autorole and UnitInRaid("player") then
+       local currrole = UnitGroupRolesAssigned("player")
+       if currrole == "NONE" then
+         local role = myDefaultRole()
+         if role and role ~= "NONE" then
+           debug(event.." setting "..role)
+           UnitSetRole("player", role)
+	   RolePollPopup:Hide()
+	   if RolePollPopup_Show and not addon.rpreg then
+	     hooksecurefunc("RolePollPopup_Show", function() 
+	       if settings.autorole then RolePollPopup:Hide() end
+	       end)
+	     addon.rpreg = true
+	   end
+         end
+       end
+     end
   end
 end
 frame:SetScript("OnEvent", OnEvent);
