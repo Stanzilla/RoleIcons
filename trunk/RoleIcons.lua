@@ -9,6 +9,7 @@ local defaults = {
   tooltip = true,
   chat = true,
   debug = false,
+  classbuttons = true,
 }
 local settings
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE] 
@@ -178,8 +179,8 @@ local function RegisterHooks()
     hooksecurefunc("HealBot_Action_RefreshTooltip", function(unit) UpdateTT(GameTooltip,unit) end)
     reg["hb"] = true
   end
-  if settings.raid and not reg["upm"] then
-     -- add the set role menu to the raid screen popup
+  if false and settings.raid and not reg["upm"] then
+     -- add the set role menu to the raid screen popup CAUSES TAINT
      table.insert(UnitPopupMenus["RAID"],1,"SELECT_ROLE")
      reg["upm"] = true
   end
@@ -193,6 +194,30 @@ local function RegisterHooks()
      GetColoredName_orig = _G.GetColoredName
      _G.GetColoredName = GetColoredName_hook
      reg["gcn"] = true
+  end
+  for i=1,20 do
+    local btn = _G["RaidClassButton"..i]
+    if btn then 
+      if settings.classbuttons then
+        btn:Show()
+      else
+        btn:Hide()
+      end
+    end
+  end
+  if RaidClassButton_OnEnter and not reg["rcboe"] then
+    hooksecurefunc("RaidClassButton_OnEnter",function() 
+        for i=1,10 do
+	  local line = _G["GameTooltipTextLeft"..i]
+	  local text = line and line:GetText()
+	  if text and string.find(text,TOOLTIP_RAID_CLASS_BUTTON,1,true) then
+	    line:SetText("")
+	    GameTooltip:Show() -- resize
+	    break
+	  end
+	end
+      end)
+    reg["rcboe"] = true
   end
 end
 
