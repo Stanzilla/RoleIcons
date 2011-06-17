@@ -344,7 +344,7 @@ local function OnEvent(frame, event, name, ...)
 	 event == "ACTIVE_TALENT_GROUP_CHANGED" then
      if settings.autorole and UnitInRaid("player") then
        local currrole = UnitGroupRolesAssigned("player")
-       if currrole == "NONE" then
+       if currrole == "NONE" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
          local role = myDefaultRole()
          if role and role ~= "NONE" then
            debug(event.." setting "..role)
