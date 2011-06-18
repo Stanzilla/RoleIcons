@@ -340,7 +340,7 @@ local function RegisterHooks()
         GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
         GameTooltip:SetText(_G[role] .. " ("..(btn.rolecnt or 0)..")") 
 	if btn.rolecall then
-          GameTooltip:AddLine(btn.rolecall) 
+          GameTooltip:AddLine(btn.rolecall,1,1,1,true) 
 	end
 	GameTooltip:Show()
       end)
