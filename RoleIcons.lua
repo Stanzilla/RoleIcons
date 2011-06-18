@@ -68,6 +68,7 @@ end
 
 local function myDefaultRole()
   local tabIndex = GetPrimaryTalentTree(false, false)
+  if not tabIndex then return end -- untalented
   local role1,role2 = GetTalentTreeRoles(tabIndex,false,false)
   if role2 then return nil -- more than one possibility (eg feral druid)
   else return role1 
