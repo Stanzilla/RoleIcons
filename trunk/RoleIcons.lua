@@ -155,8 +155,14 @@ local function UpdateRGF()
        if unit then
          local role = UnitGroupRolesAssigned(unit)
          if role and role ~= "NONE" then
+	   local name = UnitName(unit)
+	   local _,class = UnitClass(unit)
+	   if class then
+	     local color = RAID_CLASS_COLORS[class]
+	     name = string.format("\124cff%.2x%.2x%.2x", color.r*255, color.g*255, color.b*255)..name.."\124r"
+	   end
 	   rolecnt[role] = (rolecnt[role] or 0) + 1
-	   rolecall[role] = ((rolecall[role] and rolecall[role]..", ") or "")..UnitName(unit)
+	   rolecall[role] = ((rolecall[role] and rolecall[role]..", ") or "")..name
            local lvl = UnitLevel(unit)
            if not lvl or lvl == 0 then
              lvl = UnitLevel(btn.name)
