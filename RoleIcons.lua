@@ -79,7 +79,7 @@ frame:RegisterEvent("ROLE_POLL_BEGIN");
 frame:RegisterEvent("RAID_ROSTER_UPDATE");
 frame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED");
 
-local function UpdateTT(tt, unit)
+local function UpdateTT(tt, unit, ttline)
   if not settings.tooltip then return end
   unit = unit or (tt and tt.GetUnit and tt:GetUnit())
   if not unit then return end
@@ -87,7 +87,7 @@ local function UpdateTT(tt, unit)
   local leader = (UnitInParty(unit) or UnitInRaid(unit)) and UnitIsPartyLeader(unit)
   if (role and role ~= "NONE") or leader then 
      local name = tt:GetName()
-     local line = _G[name.."TextLeft1"]
+     local line = ttline or _G[name.."TextLeft1"]
      if line and line.GetText then
        local txt = line:GetText()
        if txt and not string.find(txt,role_tex_file,1,true) then
@@ -97,6 +97,13 @@ local function UpdateTT(tt, unit)
          line:SetText(getRoleTex(role,iconsz)..txt)
        end
      end
+  end
+end
+
+local function VuhdoHook()
+  if VuhDoTooltip and VuhDoTooltipTextL1 then
+    local unit = VuhDoTooltipTextL1:GetText()
+    UpdateTT(VuhDoTooltip, unit, VuhDoTooltipTextL1)
   end
 end
 
@@ -257,6 +264,11 @@ local function RegisterHooks()
   if settings.tooltip and HealBot_Action_RefreshTooltip and not reg["hb"] then
     hooksecurefunc("HealBot_Action_RefreshTooltip", function(unit) UpdateTT(GameTooltip,unit) end)
     reg["hb"] = true
+  end
+  -- if settings.tooltip and VUHDO_showTooltip and VUHDO_GLOBAL and VUHDO_GLOBAL["VUHDO_showTooltip"] and not reg["vh"] then
+  if settings.tooltip and VUHDO_updateTooltip and not reg["vh"] then
+    hooksecurefunc("VUHDO_updateTooltip", VuhdoHook)
+    reg["vh"] = true
   end
   if false and settings.raid and not reg["upm"] then
      -- add the set role menu to the raid screen popup CAUSES TAINT
