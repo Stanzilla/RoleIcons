@@ -12,6 +12,7 @@ local defaults = {
   classbuttons = true,
   rolebuttons = true,
   autorole = true,
+  target = true,
 }
 local settings
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE] 
@@ -78,6 +79,7 @@ frame:RegisterEvent("ADDON_LOADED");
 frame:RegisterEvent("ROLE_POLL_BEGIN");
 frame:RegisterEvent("RAID_ROSTER_UPDATE");
 frame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED");
+frame:RegisterEvent("PLAYER_TARGET_CHANGED");
 
 local function UpdateTT(tt, unit, ttline)
   if not settings.tooltip then return end
@@ -244,6 +246,23 @@ function GetColoredName_hook(event, arg1, arg2, ...)
   return ret 
 end
 
+function UpdateTarget() 
+  if addon.tgttex then addon.tgttex:Hide() end
+  if not settings.target or not UnitIsPlayer("target") or not TargetFrame:IsVisible() then return end
+  local role = UnitGroupRolesAssigned("target")
+  if role == "NONE" then return end
+  if not addon.tgttex then
+    local tex = TargetFrameTextureFrame:CreateTexture(addonName.."TargetFrameRole","OVERLAY")
+    tex:ClearAllPoints()
+    tex:SetPoint("BOTTOMLEFT", TargetFrameTextureFrameName, "TOPRIGHT",0,-8)
+    tex:SetTexture(role_tex_file)
+    tex:SetSize(20,20)
+    addon.tgttex = tex
+  end
+  addon.tgttex:SetTexCoord(getRoleTexCoord(role))
+  addon.tgttex:Show()
+end
+
 local reg = {}
 local function RegisterHooks()
   if not settings then return end
@@ -351,6 +370,8 @@ local function OnEvent(frame, event, name, ...)
      RegisterHooks() 
   elseif event == "ADDON_LOADED" then
      --debug("ADDON_LOADED: "..name)
+  elseif event == "PLAYER_TARGET_CHANGED" then
+     UpdateTarget()
   elseif event == "ROLE_POLL_BEGIN" or 
          event == "RAID_ROSTER_UPDATE" or 
 	 event == "ACTIVE_TALENT_GROUP_CHANGED" then
