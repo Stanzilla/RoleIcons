@@ -234,6 +234,19 @@ function ChatFilter(self, event, message, sender, ...)
   return false, message, sender, ...
 end
 
+function PratFilter()
+  if not settings.chat then return false end
+  local sm = Prat.SplitMessageOrg
+  if sm and sm.EVENT and chats[sm.EVENT] and sm.PLAYER then
+    local role = UnitGroupRolesAssigned(sm.PLAYER)
+    if (role and role ~= "NONE") then
+      if not string.find(sm.PLAYER,role_tex_file,1,true) then
+        sm.PLAYER = getRoleTex(role,0)..sm.PLAYER
+      end
+    end
+  end
+end
+
 local GetColoredName_orig
 function GetColoredName_hook(event, arg1, arg2, ...)
   local ret = GetColoredName_orig(event, arg1, arg2, ...)
@@ -300,6 +313,10 @@ local function RegisterHooks()
      end
      reg["chats"] = true
   end
+  if settings.chat and Prat and not reg["prat"] then
+     hooksecurefunc(Prat,"SplitChatMessage",PratFilter)
+     reg["prat"] = true
+  end
   if settings.chat and GetColoredName and not reg["gcn"] then
      GetColoredName_orig = _G.GetColoredName
      _G.GetColoredName = GetColoredName_hook
@@ -351,6 +368,14 @@ local function RegisterHooks()
       end)
     reg["rcboe"] = true
   end
+  if RolePollPopup_Show and not reg["rpp"] then
+     hooksecurefunc("RolePollPopup_Show", function() 
+       if settings.autorole and not addon.rolepolloverride then 
+         RolePollPopup:Hide() 
+       end
+     end)
+     reg["rpp"] = true
+  end
 end
 
 local function OnEvent(frame, event, name, ...)
@@ -375,20 +400,18 @@ local function OnEvent(frame, event, name, ...)
   elseif event == "ROLE_POLL_BEGIN" or 
          event == "RAID_ROSTER_UPDATE" or 
 	 event == "ACTIVE_TALENT_GROUP_CHANGED" then
-     if settings.autorole and UnitInRaid("player") then
+     if settings.autorole then
        local currrole = UnitGroupRolesAssigned("player")
-       if currrole == "NONE" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
+       if (currrole == "NONE" and event ~= "ACTIVE_TALENT_GROUP_CHANGED") or
+          (currrole ~= "NONE" and event == "ACTIVE_TALENT_GROUP_CHANGED") then
          local role = myDefaultRole()
-         if role and role ~= "NONE" then
+	 if not role then
+	   addon.rolepolloverride = true -- dont hide roll poll for feral druids
+         elseif role ~= "NONE" then
+	   addon.rolepolloverride = false
            debug(event.." setting "..role)
            UnitSetRole("player", role)
-	   RolePollPopup:Hide()
-	   if RolePollPopup_Show and not addon.rpreg then
-	     hooksecurefunc("RolePollPopup_Show", function() 
-	       if settings.autorole then RolePollPopup:Hide() end
-	       end)
-	     addon.rpreg = true
-	   end
+           RolePollPopup:Hide() 
          end
        end
      end
