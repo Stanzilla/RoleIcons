@@ -191,7 +191,7 @@ local function UpdateRGF()
        end
        if not InCombatLockdown() then
          -- extra bonus, make the secure frames targettable
-         btn:SetAttribute("type", "target")
+         btn:SetAttribute("type1", "target")
          btn:SetAttribute("unit", btn.unit)
        end
        addon.btnhook = addon.btnhook or {}
