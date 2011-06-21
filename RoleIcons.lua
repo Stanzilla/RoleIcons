@@ -244,7 +244,9 @@ end
 function PratFilter()
   if not settings.chat then return false end
   local sm = Prat.SplitMessageOrg
-  if sm and sm.EVENT and chats[sm.EVENT] and sm.PLAYER then
+  --debug("sm.EVENT="..(sm.EVENT or "nil").."  sm.PLAYER="..(sm.PLAYER or "nil"))
+  if sm and sm.EVENT and sm.PLAYER and 
+     (chats[sm.EVENT] or sm.EVENT == "CHAT_MSG_PARTY_GUIDE") then -- nonevent created by Prat
     local role = UnitGroupRolesAssigned(sm.PLAYER)
     if (role and role ~= "NONE") then
       if not string.find(sm.PLAYER,role_tex_file,1,true) then
