@@ -5,14 +5,14 @@ RoleIcons = {}
 local addon = RoleIcons
 local _G = getfenv(0)
 local defaults = { 
-  raid = true,
-  tooltip = true,
-  chat = true,
-  debug = false,
-  classbuttons = true,
-  rolebuttons = true,
-  autorole = true,
-  target = true,
+  raid =         { true,  L["Show role icons on the Raid tab"] },
+  tooltip =      { true,  L["Show role icons in player tooltips"] },
+  chat =         { true,  L["Show role icons in chat windows"] },
+  debug =        { false, L["Debug the addon"] },
+  classbuttons = { true,  L["Add class summary buttons to the Raid tab"] },
+  rolebuttons =  { true,  L["Add role summary buttons to the Raid tab"] },
+  autorole =     { true,  L["Automatically set role and respond to role checks based on your spec"] },
+  target =       { true,  L["Show role icons on the target frame (default Blizzard frames)"] },
 }
 local settings
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE] 
@@ -394,7 +394,7 @@ local function OnEvent(frame, event, name, ...)
      settings = RoleIconsDB
      for k,v in pairs(defaults) do
        if settings[k] == nil then
-         settings[k] = defaults[k]
+         settings[k] = defaults[k][1]
        end
      end
      addon:SetupVersion()
@@ -441,10 +441,15 @@ SlashCmdList["ROLEICONS"] = function(msg)
         else
 	  local usage = ""
           chatMsg(LaddonName.." "..addon.version)
-	  for c,_ in pairs(settings) do
+	  for c,_ in pairs(defaults) do
 	    usage = usage.." | "..c
 	  end
           chatMsg(SLASH_ROLEICONS1.." [ check"..usage.." ]")
+	  chatMsg("  "..SLASH_ROLEICONS1.." check  - "..L["Perform a role check (requires assist or leader)"])
+	  for c,v in pairs(defaults) do
+	    chatMsg("  "..SLASH_ROLEICONS1.." "..c.."  ["..
+	      (settings[c] and "|cff00ff00"..YES or "|cffff0000"..NO).."|r] "..v[2])
+	  end
         end
 end
 SLASH_ROLECHECK1 = L["/rolecheck"]
