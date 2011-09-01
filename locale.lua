@@ -30,4 +30,6 @@ elseif locale == "esES" then do end
 --@localization(locale="esES", format="lua_additive_table", table-name="La")@
 elseif locale == "zhTW" then do end
 --@localization(locale="zhTW", format="lua_additive_table", table-name="La")@
+elseif locale == "ptBR" then do end
+--@localization(locale="ptBR", format="lua_additive_table", table-name="La")@
 end

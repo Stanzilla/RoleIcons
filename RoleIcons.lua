@@ -71,8 +71,27 @@ local function myDefaultRole()
   local tabIndex = GetPrimaryTalentTree(false, false)
   if not tabIndex then return end -- untalented
   local role1,role2 = GetTalentTreeRoles(tabIndex,false,false)
-  if role2 then return nil -- more than one possibility (eg feral druid)
-  else return role1 
+  if not role2 then
+    addon.rolepolloverride = false
+    return role1 
+  else -- more than one possibility (eg feral druid)
+    addon.rolepolloverride = true -- dont hide roll poll for feral druids
+    local _, class = UnitClass("player")
+    if class == "DRUID" then
+      local tanktalents = 0 -- look for tank talents
+      for ti = 1, GetNumTalents() do
+        local name, _, _, _, rank, maxrank = GetTalentInfo(tabIndex, ti, nil, nil, nil)
+	if (name == "Thick Hide" or name == "Natural Reaction") and rank == maxrank then
+	  tanktalents = tanktalents + 1
+	end
+      end
+      if tanktalents >= 2 then
+        return "TANK"
+      else
+        return "DAMAGER"
+      end
+    end
+    return nil 
   end
 end
 
@@ -423,10 +442,7 @@ local function OnEvent(frame, event, name, ...)
        if (currrole == "NONE" and event ~= "ACTIVE_TALENT_GROUP_CHANGED") or
           (currrole ~= "NONE" and event == "ACTIVE_TALENT_GROUP_CHANGED") then
          local role = myDefaultRole()
-	 if not role then
-	   addon.rolepolloverride = true -- dont hide roll poll for feral druids
-         elseif role ~= "NONE" then
-	   addon.rolepolloverride = false
+	 if role and role ~= "NONE" then
            debug(event.." setting "..role)
            UnitSetRole("player", role)
            RolePollPopup:Hide() 
