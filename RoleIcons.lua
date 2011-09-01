@@ -79,7 +79,7 @@ local function myDefaultRole()
     local _, class = UnitClass("player")
     if class == "DRUID" then
       local tanktalents = 0 -- look for tank talents
-      for ti = 1, GetNumTalents() do
+      for ti = 1, GetNumTalents(tabIndex, nil, nil) do
         local name, _, _, _, rank, maxrank = GetTalentInfo(tabIndex, ti, nil, nil, nil)
 	if (name == "Thick Hide" or name == "Natural Reaction") and rank == maxrank then
 	  tanktalents = tanktalents + 1
