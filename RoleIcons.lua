@@ -80,8 +80,10 @@ local function myDefaultRole()
     if class == "DRUID" then
       local tanktalents = 0 -- look for tank talents
       for ti = 1, GetNumTalents(tabIndex, nil, nil) do
-        local name, _, _, _, rank, maxrank = GetTalentInfo(tabIndex, ti, nil, nil, nil)
-	if (name == "Thick Hide" or name == "Natural Reaction") and rank == maxrank then
+        --local name, _, _, _, rank, maxrank = GetTalentInfo(tabIndex, ti, nil, nil, nil)
+	--if (name == "Thick Hide" or name == "Natural Reaction") and rank == maxrank then
+	local link = GetTalentLink(tabIndex, ti, false, nil, nil)
+	if link:match("\124Htalent:8293:2\124") or link:match("\124Htalent:8758:1\124") then
 	  tanktalents = tanktalents + 1
 	end
       end
