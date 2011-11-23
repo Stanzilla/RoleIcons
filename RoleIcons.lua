@@ -68,15 +68,18 @@ local function debug(msg)
 end
 
 local function myDefaultRole()
+  local _, class = UnitClass("player")
+  if class == "MAGE" or class == "HUNTER" or class == "WARLOCK" or class == "ROGUE" then
+    return "DAMAGER"
+  end
   local tabIndex = GetPrimaryTalentTree(false, false)
-  if not tabIndex then return end -- untalented
+  if not tabIndex then return nil end -- untalented hybrid
   local role1,role2 = GetTalentTreeRoles(tabIndex,false,false)
   if not role2 then
     addon.rolepolloverride = false
     return role1 
   else -- more than one possibility (eg feral druid)
     addon.rolepolloverride = true -- dont hide roll poll for feral druids
-    local _, class = UnitClass("player")
     if class == "DRUID" then
       local tanktalents = 0 -- look for tank talents
       for ti = 1, GetNumTalents(tabIndex, nil, nil) do
@@ -405,8 +408,9 @@ local function RegisterHooks()
   end
   if RolePollPopup_Show and not reg["rpp"] then
      hooksecurefunc("RolePollPopup_Show", function() 
-       if settings.autorole and not addon.rolepolloverride then 
-         RolePollPopup:Hide() 
+       if settings.autorole and not addon.rolepolloverride and UnitGroupRolesAssigned("player") ~= "NONE" then 
+         --RolePollPopup:Hide() 
+         StaticPopupSpecial_Hide(RolePollPopup) -- ticket 4
        end
      end)
      reg["rpp"] = true
@@ -447,7 +451,8 @@ local function OnEvent(frame, event, name, ...)
 	 if role and role ~= "NONE" then
            debug(event.." setting "..role)
            UnitSetRole("player", role)
-           RolePollPopup:Hide() 
+           --RolePollPopup:Hide() 
+           StaticPopupSpecial_Hide(RolePollPopup) -- ticket 4
          end
        end
      end
