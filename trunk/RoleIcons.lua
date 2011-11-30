@@ -160,9 +160,9 @@ local function UpdateRGF()
   if IsRaidOfficer() then
      if not addon.rolecheckbtn then
        local btn = CreateFrame("Button","RaidIconsRoleCheckBtn",RaidFrame,"UIPanelButtonTemplate")
-       btn:SetSize(RaidFrameRaidBrowserButton:GetSize())
+       btn:SetSize(RaidFrameReadyCheckButton:GetSize())
        btn:SetText(ROLE_POLL)
-       btn:SetPoint("BOTTOMLEFT", RaidFrameRaidBrowserButton, "TOPLEFT", 0, 2)
+       btn:SetPoint("BOTTOMLEFT", RaidFrameAllAssistCheckButton, "TOPLEFT", 0, 2)
        btn:SetScript("OnClick", function() InitiateRolePoll() end)
        btn:SetNormalFontObject(GameFontNormalSmall)
        btn:SetHighlightFontObject(GameFontHighlightSmall)
@@ -362,7 +362,7 @@ local function RegisterHooks()
   end
   if settings.classbuttons and RaidClassButton10 then
     RaidClassButton10:ClearAllPoints()
-    RaidClassButton10:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",-36,95)
+    RaidClassButton10:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",-1,15)
   end
   if settings.rolebuttons and RaidClassButton1 and not addon.rolebuttons then
     addon.rolebuttons = {}
