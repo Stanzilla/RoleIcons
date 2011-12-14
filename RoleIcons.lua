@@ -191,7 +191,7 @@ local function UpdateRGF()
 	   rolecall[role] = ((rolecall[role] and rolecall[role]..", ") or "")..name
            local lvl = UnitLevel(unit)
            if not lvl or lvl == 0 then
-             lvl = UnitLevel(btn.name)
+             lvl = (btn.name and UnitLevel(btn.name)) or 0
            end
            if settings.raid and lvl == maxlvl or lvl == 0 then -- sometimes returns 0 during moves
              btn.subframes.level:SetDrawLayer("OVERLAY")
@@ -234,7 +234,7 @@ local function UpdateRGF()
   end
   if addon.rolebuttons then
   for role,btn in pairs(addon.rolebuttons) do
-    if settings.rolebuttons and UnitInRaid("player") then  
+    if settings.rolebuttons and UnitInRaid("player") and not RaidInfoFrame:IsShown() then  
       btn.rolecnt = rolecnt[role] or 0
       btn.rolecall = rolecall[role]
       _G[btn:GetName().."Count"]:SetText(btn.rolecnt)
@@ -247,7 +247,7 @@ local function UpdateRGF()
   for i=1,20 do
     local btn = _G["RaidClassButton"..i]
     if btn then 
-      if settings.classbuttons and UnitInRaid("player") and i <= 10 then
+      if settings.classbuttons and UnitInRaid("player") and i <= 10 and not RaidInfoFrame:IsShown() then
         btn:Show()
       else
         btn:Hide()
@@ -322,6 +322,12 @@ local function RegisterHooks()
     hooksecurefunc("RaidGroupFrame_Update",UpdateRGF)
     hooksecurefunc("RaidGroupFrame_UpdateLevel",UpdateRGF)
     reg["rgb"] = true
+  end
+  if settings.raid and RaidInfoFrame and not reg["rif"] then
+    debug("Registering RaidInfoframe")
+    hooksecurefunc(RaidInfoFrame,"Show",UpdateRGF)
+    hooksecurefunc(RaidInfoFrame,"Hide",UpdateRGF)
+    reg["rif"] = true
   end
   if settings.tooltip and GameTooltip and not reg["gtt"] then
     debug("Registering GameTooltip")
