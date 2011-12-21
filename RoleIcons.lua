@@ -152,8 +152,40 @@ function ShowRoleMenu(self)
         end
 end
 
+local classcnt = {}
 local rolecnt = {}
 local rolecall = {}
+
+local tokendata = {
+  [L["Vanquisher"]] = { { "ROGUE", L["Rogue"] }, { "DEATHKNIGHT", L["DK"] }, { "MAGE", L["Mage"] }, { "DRUID", L["Druid"] } },
+  [L["Protector"]] = { { "WARRIOR", L["Warrior"] }, { "HUNTER", L["Hunter"] }, { "SHAMAN", L["Shaman"] } },
+  [L["Conqueror"]] = { { "PALADIN", L["Paladin"] }, { "PRIEST", L["Priest"] }, { "WARLOCK", L["Warlock"] } },
+}
+local function DisplayTokenTooltip()
+  if not UnitInRaid("player") then return end
+
+  GameTooltip:ClearLines()
+  GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
+  GameTooltip:AddLine(L["Tier token breakdown:"])
+
+  for token, ti in pairs(tokendata) do
+    local tokenstr = ""
+    local cnt = 0
+    for _,ci in ipairs(ti) do
+      local class = ci[1]
+      local lclass = ci[2]
+      cnt = cnt + (classcnt[class] or 0)
+      local color = RAID_CLASS_COLORS[class]
+      local classstr = string.format("\124cff%.2x%.2x%.2x", color.r*255, color.g*255, color.b*255)..lclass.."\124r"
+      if #tokenstr >  0 then tokenstr = tokenstr..", " end
+      tokenstr = tokenstr..classstr
+    end
+    GameTooltip:AddLine("\124cffff0000"..cnt.."\124r".."  \124cffffffff"..token.." (\124r"..tokenstr.."\124cffffffff)\124r")
+  end
+
+  GameTooltip:Show()
+
+end
 
 local function UpdateRGF()
   if not RaidFrame then return end
@@ -172,6 +204,7 @@ local function UpdateRGF()
   elseif addon.rolecheckbtn then
      addon.rolecheckbtn:Hide()
   end
+  wipe(classcnt)
   wipe(rolecnt)
   wipe(rolecall)
   for i=1,40 do
@@ -186,6 +219,7 @@ local function UpdateRGF()
 	   if class then
 	     local color = RAID_CLASS_COLORS[class]
 	     name = string.format("\124cff%.2x%.2x%.2x", color.r*255, color.g*255, color.b*255)..name.."\124r"
+             classcnt[class] = (classcnt[class] or 0) + 1
 	   end
 	   rolecnt[role] = (rolecnt[role] or 0) + 1
 	   rolecall[role] = ((rolecall[role] and rolecall[role]..", ") or "")..name
@@ -253,6 +287,14 @@ local function UpdateRGF()
         btn:Hide()
       end
     end
+  end
+  if not addon.headerFrame then
+    addon.headerFrame = CreateFrame("Button", addonName.."HeaderButton", RaidFrame)
+    addon.headerFrame:SetPoint("TOPLEFT",RaidFrame,-10,10)
+    addon.headerFrame:SetSize(74,74)
+    addon.headerFrame:Show()
+    addon.headerFrame:SetScript("OnEnter", function() DisplayTokenTooltip() end)
+    addon.headerFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
   end
 end
 
