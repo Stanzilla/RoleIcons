@@ -166,8 +166,20 @@ local function DisplayTokenTooltip()
 
   GameTooltip:ClearLines()
   GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
-  GameTooltip:AddLine(L["Tier token breakdown:"])
+  local total = 0
+  local summstr = ""
+  for _,role in ipairs({"TANK","HEALER","DAMAGER"}) do
+    local cnt = rolecnt[role] or 0
+    summstr = summstr..cnt.." "..getRoleTex(role).."   "
+    total = total + cnt
+  end
+  local none = rolecnt["NONE"]
+  if none and none > 0 then
+    summstr = summstr..none.." "..L["Unassigned"]
+    total = total + none
+  end
 
+  GameTooltip:AddLine(L["Tier token breakdown:"])
   for token, ti in pairs(tokendata) do
     local tokenstr = ""
     local cnt = 0
@@ -183,6 +195,8 @@ local function DisplayTokenTooltip()
     GameTooltip:AddLine("\124cffff0000"..cnt.."\124r".."  \124cffffffff"..token.." (\124r"..tokenstr.."\124cffffffff)\124r")
   end
 
+  GameTooltip:AddLine(" ")
+  GameTooltip:AddLine(total.." "..L["Players:"].." "..summstr)
   GameTooltip:Show()
 
 end
@@ -213,18 +227,19 @@ local function UpdateRGF()
        local unit = btn.unit
        if unit then
          local role = UnitGroupRolesAssigned(unit)
+	 local name = UnitName(unit)
 	 local _,class = UnitClass(unit)
 	 if class then
            classcnt[class] = (classcnt[class] or 0) + 1
 	 end
-         if role and role ~= "NONE" then
-	   local name = UnitName(unit)
+	 role = role or "NONE"
+	 rolecnt[role] = (rolecnt[role] or 0) + 1
+	 rolecall[role] = ((rolecall[role] and rolecall[role]..", ") or "")..name
+         if role ~= "NONE" then
 	   if class then
 	     local color = RAID_CLASS_COLORS[class]
 	     name = string.format("\124cff%.2x%.2x%.2x", color.r*255, color.g*255, color.b*255)..name.."\124r"
 	   end
-	   rolecnt[role] = (rolecnt[role] or 0) + 1
-	   rolecall[role] = ((rolecall[role] and rolecall[role]..", ") or "")..name
            local lvl = UnitLevel(unit)
            if not lvl or lvl == 0 then
              lvl = (btn.name and UnitLevel(btn.name)) or 0
