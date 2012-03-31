@@ -204,7 +204,7 @@ end
 local function UpdateRGF()
   if not RaidFrame then return end
   if IsRaidOfficer() then
-     if not addon.rolecheckbtn then
+     if not addon.rolecheckbtn and RaidFrameReadyCheckButton and RaidFrameAllAssistCheckButton then
        local btn = CreateFrame("Button","RaidIconsRoleCheckBtn",RaidFrame,"UIPanelButtonTemplate")
        btn:SetSize(RaidFrameReadyCheckButton:GetSize())
        btn:SetText(ROLE_POLL)
