@@ -1,7 +1,7 @@
-local L = RI_locale()
-local addonName = "RoleIcons"
+local addonName, vars = ...
+local L = vars.L
 local LaddonName = L[addonName]
-RoleIcons = {}
+RoleIcons = vars
 local addon = RoleIcons
 local _G = getfenv(0)
 local defaults = { 
@@ -17,8 +17,8 @@ local defaults = {
 }
 local settings
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE] 
-RI_svnrev = {}
-RI_svnrev["RoleIcons.lua"] = tonumber(("$Revision$"):match("%d+"))
+vars.svnrev = {}
+vars.svnrev["RoleIcons.lua"] = tonumber(("$Revision$"):match("%d+"))
 
 local chats = { 
 	CHAT_MSG_SAY = 1, CHAT_MSG_YELL = 1, 
@@ -554,7 +554,7 @@ SlashCmdList["ROLECHECK"] = function(msg) InitiateRolePoll() end
 
 function addon:SetupVersion()
    local svnrev = 0
-   local T_svnrev = RI_svnrev
+   local T_svnrev = vars.svnrev
    T_svnrev["X-Build"] = tonumber((GetAddOnMetadata(addonName, "X-Build") or ""):match("%d+"))
    T_svnrev["X-Revision"] = tonumber((GetAddOnMetadata(addonName, "X-Revision") or ""):match("%d+"))
    for _,v in pairs(T_svnrev) do -- determine highest file revision
