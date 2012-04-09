@@ -39,7 +39,7 @@ local role_tex = {
    LEADER  = role_t.."0:0:64:64:0:19:1:20\124t",
    NONE    = ""
 }
-function getRoleTex(role,size)
+local function getRoleTex(role,size)
   local str = role_tex[role]
   if not str or #str == 0 then return "" end
   if not size then size = 0 end
@@ -51,7 +51,7 @@ function getRoleTex(role,size)
   end
   return str
 end
-function getRoleTexCoord(role)
+local function getRoleTexCoord(role)
   local str = role_tex[role]
   if not str or #str == 0 then return nil end
   local a,b,c,d = string.match(str, ":(%d+):(%d+):(%d+):(%d+)%\124t")
@@ -136,11 +136,11 @@ local function VuhdoHook()
   end
 end
 
-function RoleMenuInitialize(self)
+local function RoleMenuInitialize(self)
         UnitPopup_ShowMenu(UIDROPDOWNMENU_OPEN_MENU, "SELECT_ROLE", self.unit, self.name, self.id);
 end
 
-function ShowRoleMenu(self)
+local function ShowRoleMenu(self)
         HideDropDownMenu(1);
         if ( self.id and self.name ) then
                 FriendsDropDown.name = self.name;
@@ -315,7 +315,7 @@ local function UpdateRGF()
   end
 end
 
-function ChatFilter(self, event, message, sender, ...)
+local function ChatFilter(self, event, message, sender, ...)
   if not settings.chat then return false end
   local role = UnitGroupRolesAssigned(sender)
   if (role and role ~= "NONE") then
@@ -326,7 +326,7 @@ function ChatFilter(self, event, message, sender, ...)
   return false, message, sender, ...
 end
 
-function PratFilter()
+local function PratFilter()
   if not settings.chat then return false end
   local sm = Prat.SplitMessageOrg
   --debug("sm.EVENT="..(sm.EVENT or "nil").."  sm.PLAYER="..(sm.PLAYER or "nil"))
@@ -342,7 +342,7 @@ function PratFilter()
 end
 
 local GetColoredName_orig
-function GetColoredName_hook(event, arg1, arg2, ...)
+local function GetColoredName_hook(event, arg1, arg2, ...)
   local ret = GetColoredName_orig(event, arg1, arg2, ...)
   if chats[event] and settings.chat then
     local role = UnitGroupRolesAssigned(arg2)
@@ -353,7 +353,7 @@ function GetColoredName_hook(event, arg1, arg2, ...)
   return ret 
 end
 
-function UpdateTarget(frame) 
+local function UpdateTarget(frame) 
   local Frame = frame:gsub("^(.)",string.upper)
   addon.frametex = addon.frametex or {}
   local tex = addon.frametex[frame]
