@@ -4,6 +4,10 @@ local LaddonName = L[addonName]
 RoleIcons = vars
 local addon = RoleIcons
 local _G = getfenv(0)
+local string, table, pairs, ipairs, tonumber, wipe = 
+      string, table, pairs, ipairs, tonumber, wipe
+local InCombatLockdown, IsRaidOfficer, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitInRaid, UnitInParty, UnitIsPartyLeader = 
+      InCombatLockdown, IsRaidOfficer, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitInRaid, UnitInParty, UnitIsPartyLeader
 local defaults = { 
   raid =         { true,  L["Show role icons on the Raid tab"] },
   tooltip =      { true,  L["Show role icons in player tooltips"] },
