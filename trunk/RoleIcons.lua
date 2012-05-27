@@ -278,6 +278,12 @@ local function UpdateRGF()
        addon.btnhook = addon.btnhook or {}
        if not addon.btnhook[btn] then
          btn:RegisterForClicks("AnyUp")
+	 btn:SetScript("OnEnter", function(self) -- override to remove obsolete shift-drag prompt
+	     RaidGroupButton_OnEnter(self);
+	     if ( RaidFrame:IsMouseOver() ) then
+	       GameTooltip:Show()
+             end
+	 end)
          btn:HookScript("OnClick", function(self, button)
 	   if button == "MiddleButton" then
 	     ShowRoleMenu(self)
