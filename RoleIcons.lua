@@ -160,10 +160,15 @@ local classcnt = {}
 local rolecnt = {}
 local rolecall = {}
 
+local LC = {}
+FillLocalizedClassList(LC, false)
+if GetLocale() == "enUS" then
+  LC["DEATHKNIGHT"] = "DK"
+end
 local tokendata = {
-  [L["Vanquisher"]] = { { "ROGUE", L["Rogue"] }, { "DEATHKNIGHT", L["DK"] }, { "MAGE", L["Mage"] }, { "DRUID", L["Druid"] } },
-  [L["Protector"]] = { { "WARRIOR", L["Warrior"] }, { "HUNTER", L["Hunter"] }, { "SHAMAN", L["Shaman"] } },
-  [L["Conqueror"]] = { { "PALADIN", L["Paladin"] }, { "PRIEST", L["Priest"] }, { "WARLOCK", L["Warlock"] } },
+  [L["Vanquisher"]] = { { "ROGUE", LC["ROGUE"] }, { "DEATHKNIGHT", LC["DEATHKNIGHT"] }, { "MAGE", LC["MAGE"] }, { "DRUID", LC["DRUID"] } },
+  [L["Protector"]] = { { "WARRIOR", LC["WARRIOR"] }, { "HUNTER", LC["HUNTER"] }, { "SHAMAN", LC["SHAMAN"] } },
+  [L["Conqueror"]] = { { "PALADIN", LC["PALADIN"] }, { "PRIEST", LC["PRIEST"] }, { "WARLOCK", LC["WARLOCK"] } },
 }
 local function DisplayTokenTooltip()
   if not UnitInRaid("player") then return end
