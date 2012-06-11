@@ -24,6 +24,11 @@ local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE]
 vars.svnrev = {}
 vars.svnrev["RoleIcons.lua"] = tonumber(("$Revision$"):match("%d+"))
 
+-- tie-in for third party addons to highlight raid buttons
+-- table maps GUID => highlight = boolean
+RoleIcons.unitstatus = {}
+RoleIcons.unitstatus.refresh = function() addon.UpdateRGF() end
+
 local chats = { 
 	CHAT_MSG_SAY = 1, CHAT_MSG_YELL = 1, 
 	CHAT_MSG_WHISPER = 1, CHAT_MSG_WHISPER_INFORM = 1,
@@ -232,15 +237,25 @@ local function UpdateRGF()
   wipe(rolecall)
   for i=1,40 do
     local btn = _G["RaidGroupButton"..i]
+    if btn then
+      if not addon.deftexture then
+         addon.deftexture = btn:GetNormalTexture():GetTexture()
+      end
+      btn:GetNormalTexture():SetTexture(addon.deftexture)
+    end
     if btn and btn.unit and btn.subframes and btn.subframes.level and btn:IsVisible() then
        local unit = btn.unit
        if unit then
          local role = UnitGroupRolesAssigned(unit)
 	 local name = UnitName(unit)
+         local guid = UnitGUID(unit)
 	 local _,class = UnitClass(unit)
 	 if class then
            classcnt[class] = (classcnt[class] or 0) + 1
 	 end
+         if addon.unitstatus[guid] then
+            btn:GetNormalTexture():SetTexture(0.5,0,0)
+         end
 	 role = role or "NONE"
 	 rolecnt[role] = (rolecnt[role] or 0) + 1
 	 rolecall[role] = ((rolecall[role] and rolecall[role]..", ") or "")..name
@@ -329,6 +344,7 @@ local function UpdateRGF()
     addon.headerFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
   end
 end
+addon.UpdateRGF = UpdateRGF
 
 local function ChatFilter(self, event, message, sender, ...)
   if not settings.chat then return false end
