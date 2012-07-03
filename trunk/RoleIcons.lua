@@ -11,6 +11,7 @@ local InCombatLockdown, IsRaidOfficer, UnitGroupRolesAssigned, UnitName, UnitCla
 local defaults = { 
   raid =         { true,  L["Show role icons on the Raid tab"] },
   tooltip =      { true,  L["Show role icons in player tooltips"] },
+  hbicon =       { true,  L["Show role icons in HealBot bars"] },
   chat =         { true,  L["Show role icons in chat windows"] },
   debug =        { false, L["Debug the addon"] },
   classbuttons = { true,  L["Add class summary buttons to the Raid tab"] },
@@ -142,6 +143,44 @@ local function VuhdoHook()
   if VuhDoTooltip and VuhDoTooltipTextL1 then
     local unit = VuhDoTooltipTextL1:GetText()
     UpdateTT(VuhDoTooltip, unit, VuhDoTooltipTextL1)
+  end
+end
+
+local function HBIconHook(button, ...)
+  if not settings.hbicon or not button then return end
+  local bar = HealBot_Action_HealthBar and HealBot_Action_HealthBar(button)
+  local unit = button and button.unit
+  local role = UnitGroupRolesAssigned(unit)
+  if not bar or not unit or not role or not UnitExists(unit) then return end
+  debug("HBIconHook: "..unit.." "..role)
+  local name = bar.GetName and bar:GetName()
+  local icon
+  for idx=15,16 do
+    local i = name and _G[name.."Icon"..idx]
+    if not i.GetTexture or not i.GetAlpha then return end
+    local curr = i:GetTexture()
+    debug(" Icon"..idx..": "..(curr or "nil"))
+    if i.SetTexCoord then
+      i:SetTexCoord(0,1,0,1)
+    end
+    if curr and curr:find("PORTRAITROLES") then
+      if not icon then 
+         icon = i 
+      else -- duplicate role icon
+         i:SetAlpha(0)
+      end
+    elseif curr == nil or i:GetAlpha() == 0 or curr:find("icon_class") then
+      if not icon then icon = i end
+    end
+  end
+  if not icon or not icon.SetTexture or not icon.SetTexCoord then return end
+  if role == "NONE" then
+    icon:SetTexture(0,0,0,0)
+    icon:SetTexCoord(0,1,0,1)
+  else
+    icon:SetTexture(role_tex_file)
+    icon:SetTexCoord(getRoleTexCoord(role))
+    icon:SetAlpha(1)
   end
 end
 
@@ -430,6 +469,20 @@ local function RegisterHooks()
   if settings.tooltip and HealBot_Action_RefreshTooltip and not reg["hb"] then
     hooksecurefunc("HealBot_Action_RefreshTooltip", function(unit) UpdateTT(GameTooltip,unit) end)
     reg["hb"] = true
+  end
+  if settings.hbicon and not reg["hbicon"] 
+     and HealBot_Action_RefreshButton
+     and HealBot_Action_PositionButton and HealBot_RaidTargetUpdate 
+     and HealBot_OnEvent_ReadyCheckUpdate 
+     then
+       hooksecurefunc("HealBot_Action_PositionButton", HBIconHook)
+       hooksecurefunc("HealBot_RaidTargetUpdate", HBIconHook)
+       hooksecurefunc("HealBot_OnEvent_ReadyCheckUpdate", function(unit)
+         debug("HealBot_OnEvent_ReadyCheckUpdate "..(unit or "nil"))
+         HBIconHook(unit and HealBot_Unit_Button and HealBot_Unit_Button[unit])
+       end)
+    hooksecurefunc("HealBot_Action_RefreshButton", HBIconHook)
+    reg["hbicon"] = true
   end
   -- if settings.tooltip and VUHDO_showTooltip and VUHDO_GLOBAL and VUHDO_GLOBAL["VUHDO_showTooltip"] and not reg["vh"] then
   if settings.tooltip and VUHDO_updateTooltip and not reg["vh"] then
