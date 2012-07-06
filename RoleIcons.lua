@@ -142,6 +142,11 @@ end
 local function VuhdoHook()
   if VuhDoTooltip and VuhDoTooltipTextL1 then
     local unit = VuhDoTooltipTextL1:GetText()
+    if not UnitExists(unit) then
+      local s = GetMouseFocus()
+      s = s and s.GetAttribute and s:GetAttribute("unit")
+      if s and UnitExists(s) then unit = s end
+    end
     UpdateTT(VuhDoTooltip, unit, VuhDoTooltipTextL1)
   end
 end
