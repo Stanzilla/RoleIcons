@@ -583,11 +583,9 @@ local function OnEvent(frame, event, name, ...)
      end
      addon:SetupVersion()
      RegisterHooks() 
-  elseif event == "ADDON_LOADED" and name == "Blizzard_RaidUI" then
+  elseif event == "ADDON_LOADED" then
      debug("ADDON_LOADED: "..name)
      RegisterHooks() 
-  elseif event == "ADDON_LOADED" then
-     --debug("ADDON_LOADED: "..name)
   elseif event == "PLAYER_TARGET_CHANGED" then
      UpdateTarget("target")
   elseif event == "PLAYER_FOCUS_CHANGED" then
