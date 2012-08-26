@@ -6,8 +6,8 @@ local addon = RoleIcons
 local _G = getfenv(0)
 local string, table, pairs, ipairs, tonumber, wipe = 
       string, table, pairs, ipairs, tonumber, wipe
-local InCombatLockdown, IsRaidOfficer, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitInRaid, UnitInParty, UnitIsPartyLeader = 
-      InCombatLockdown, IsRaidOfficer, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitInRaid, UnitInParty, UnitIsPartyLeader
+local InCombatLockdown, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitIsGroupLeader, UnitIsGroupAssistant = 
+      InCombatLockdown, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitIsGroupLeader, UnitIsGroupAssistant
 local defaults = { 
   raid =         { true,  L["Show role icons on the Raid tab"] },
   tooltip =      { true,  L["Show role icons in player tooltips"] },
@@ -82,38 +82,16 @@ local function myDefaultRole()
   if class == "MAGE" or class == "HUNTER" or class == "WARLOCK" or class == "ROGUE" then
     return "DAMAGER"
   end
-  local tabIndex = GetPrimaryTalentTree(false, false)
+  local tabIndex = GetSpecialization(false, false)
   if not tabIndex then return nil end -- untalented hybrid
-  local role1,role2 = GetTalentTreeRoles(tabIndex,false,false)
-  if not role2 then
-    addon.rolepolloverride = false
-    return role1 
-  else -- more than one possibility (eg feral druid)
-    addon.rolepolloverride = true -- dont hide roll poll for feral druids
-    if class == "DRUID" then
-      local tanktalents = 0 -- look for tank talents
-      for ti = 1, GetNumTalents(tabIndex, nil, nil) do
-        --local name, _, _, _, rank, maxrank = GetTalentInfo(tabIndex, ti, nil, nil, nil)
-	--if (name == "Thick Hide" or name == "Natural Reaction") and rank == maxrank then
-	local link = GetTalentLink(tabIndex, ti, false, nil, nil)
-	if link:match("\124Htalent:8293:2\124") or link:match("\124Htalent:8758:1\124") then
-	  tanktalents = tanktalents + 1
-	end
-      end
-      if tanktalents >= 2 then
-        return "TANK"
-      else
-        return "DAMAGER"
-      end
-    end
-    return nil 
-  end
+  local role = GetSpecializationRole(tabIndex,false,false)
+  return role 
 end
 
 local frame = CreateFrame("Button", addonName.."HiddenFrame", UIParent)
 frame:RegisterEvent("ADDON_LOADED");
 frame:RegisterEvent("ROLE_POLL_BEGIN");
-frame:RegisterEvent("RAID_ROSTER_UPDATE");
+frame:RegisterEvent("GROUP_ROSTER_UPDATE");
 frame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED");
 frame:RegisterEvent("PLAYER_TARGET_CHANGED");
 frame:RegisterEvent("PLAYER_FOCUS_CHANGED");
@@ -123,7 +101,7 @@ local function UpdateTT(tt, unit, ttline)
   unit = unit or (tt and tt.GetUnit and tt:GetUnit())
   if not unit then return end
   local role = UnitGroupRolesAssigned(unit)
-  local leader = (UnitInParty(unit) or UnitInRaid(unit)) and UnitIsPartyLeader(unit)
+  local leader = GetNumGroupMembers() > 0 and UnitIsGroupLeader(unit)
   if (role and role ~= "NONE") or leader then 
      local name = tt:GetName()
      local line = ttline or _G[name.."TextLeft1"]
@@ -216,7 +194,7 @@ if GetLocale() == "enUS" then
 end
 local tokendata = {
   [L["Vanquisher"]] = { { "ROGUE", LC["ROGUE"] }, { "DEATHKNIGHT", LC["DEATHKNIGHT"] }, { "MAGE", LC["MAGE"] }, { "DRUID", LC["DRUID"] } },
-  [L["Protector"]] = { { "WARRIOR", LC["WARRIOR"] }, { "HUNTER", LC["HUNTER"] }, { "SHAMAN", LC["SHAMAN"] } },
+  [L["Protector"]] = { { "WARRIOR", LC["WARRIOR"] }, { "HUNTER", LC["HUNTER"] }, { "SHAMAN", LC["SHAMAN"] }, { "MONK", LC["MONK"] } },
   [L["Conqueror"]] = { { "PALADIN", LC["PALADIN"] }, { "PRIEST", LC["PRIEST"] }, { "WARLOCK", LC["WARLOCK"] } },
 }
 local function DisplayTokenTooltip()
@@ -261,10 +239,10 @@ end
 
 local function UpdateRGF()
   if not RaidFrame then return end
-  if IsRaidOfficer() then
-     if not addon.rolecheckbtn and RaidFrameReadyCheckButton and RaidFrameAllAssistCheckButton then
+  if UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") then
+     if not addon.rolecheckbtn and RaidFrameRaidInfoButton and RaidFrameAllAssistCheckButton then
        local btn = CreateFrame("Button","RaidIconsRoleCheckBtn",RaidFrame,"UIPanelButtonTemplate")
-       btn:SetSize(RaidFrameReadyCheckButton:GetSize())
+       btn:SetSize(RaidFrameRaidInfoButton:GetSize())
        btn:SetText(ROLE_POLL)
        btn:SetPoint("BOTTOMLEFT", RaidFrameAllAssistCheckButton, "TOPLEFT", 0, 2)
        btn:SetScript("OnClick", function() InitiateRolePoll() end)
@@ -279,13 +257,17 @@ local function UpdateRGF()
   wipe(classcnt)
   wipe(rolecnt)
   wipe(rolecall)
+  local guessmaxraidlvl = addon.maxraidlvl or maxlvl
+  addon.maxraidlvl = 0
   for i=1,40 do
     local btn = _G["RaidGroupButton"..i]
     if btn then
       if not addon.deftexture then
          addon.deftexture = btn:GetNormalTexture():GetTexture()
       end
-      btn:GetNormalTexture():SetTexture(addon.deftexture)
+      if addon.deftexture then
+         btn:GetNormalTexture():SetTexture(addon.deftexture)
+      end
     end
     if btn and btn.unit and btn.subframes and btn.subframes.level and btn:IsVisible() then
        local unit = btn.unit
@@ -293,7 +275,10 @@ local function UpdateRGF()
          local role = UnitGroupRolesAssigned(unit)
 	 local name = UnitName(unit)
          local guid = UnitGUID(unit)
-	 local _,class = UnitClass(unit)
+	 local lclass,class = UnitClass(unit)
+         if not class or #class == 0 then
+            lclass,class = UnitClass(btn.name)
+         end
 	 if class then
            classcnt[class] = (classcnt[class] or 0) + 1
 	 end
@@ -312,25 +297,28 @@ local function UpdateRGF()
            if not lvl or lvl == 0 then
              lvl = (btn.name and UnitLevel(btn.name)) or 0
            end
-           if settings.raid and lvl == maxlvl or lvl == 0 then -- sometimes returns 0 during moves
-             btn.subframes.level:SetDrawLayer("OVERLAY")
-	     while true do
-               btn.subframes.level:SetText(getRoleTex(role,riconsz))
-	       if btn.subframes.level:IsTruncated() then
-	         riconsz = riconsz - 1
-		 debug("Reduced iconsz to: "..riconsz)
-	       else
-	         break
-	       end
-	     end
-           elseif settings.raid then
+	   addon.maxraidlvl = math.max(addon.maxraidlvl, lvl or 0)
+           if settings.raid then
+	    local txt1 = lvl
+	    local txt2 = lclass
+	    if (lvl == guessmaxraidlvl or lvl == 0) then -- sometimes returns 0 during moves
+	     txt1 = getRoleTex(role,riconsz)
+	     txt2 = lclass
+            else
              --print(unit.." "..lvl)
-             local class = UnitClass(unit)
-             if not class or #class == 0 then
-                class = UnitClass(btn.name)
-             end
-             btn.subframes.class:SetDrawLayer("OVERLAY")
-             btn.subframes.class:SetText(getRoleTex(role,riconsz).." "..class)
+	     txt1 = lvl
+	     txt2 = getRoleTex(role,riconsz).." "..lclass
+	    end
+            btn.subframes.level:SetDrawLayer("OVERLAY")
+            btn.subframes.level:SetText(txt1)
+            btn.subframes.class:SetDrawLayer("OVERLAY")
+            btn.subframes.class:SetText(txt2)
+	    if txt1 ~= lvl and btn.subframes.level:IsTruncated() then
+	       riconsz = riconsz - 1
+	       debug("Reduced iconsz to: "..riconsz)
+	       UpdateRGF()
+	       return
+	    end
            end
          end
        end
@@ -356,6 +344,10 @@ local function UpdateRGF()
 	 addon.btnhook[btn] = true
        end
     end
+  end
+  if addon.maxraidlvl ~= guessmaxraidlvl then -- cache miss
+    UpdateRGF()
+    return
   end
   if addon.rolebuttons then
   for role,btn in pairs(addon.rolebuttons) do
@@ -562,7 +554,7 @@ local function RegisterHooks()
   end
   if RolePollPopup_Show and not reg["rpp"] then
      hooksecurefunc("RolePollPopup_Show", function() 
-       if settings.autorole and not addon.rolepolloverride and UnitGroupRolesAssigned("player") ~= "NONE" then 
+       if settings.autorole and UnitGroupRolesAssigned("player") ~= "NONE" then 
          --RolePollPopup:Hide() 
          StaticPopupSpecial_Hide(RolePollPopup) -- ticket 4
        end
@@ -591,7 +583,7 @@ local function OnEvent(frame, event, name, ...)
   elseif event == "PLAYER_FOCUS_CHANGED" then
      UpdateTarget("focus")
   elseif event == "ROLE_POLL_BEGIN" or 
-         event == "RAID_ROSTER_UPDATE" or 
+         event == "GROUP_ROSTER_UPDATE" or 
 	 event == "ACTIVE_TALENT_GROUP_CHANGED" then
      UpdateTarget("target")
      UpdateTarget("focus")

@@ -1,4 +1,4 @@
-## Interface: 40300
+## Interface: 50001
 ## Title: RoleIcons 
 ## Notes: Adds party/raid role icons in useful places
 ## Author: oscarucb
