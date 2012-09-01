@@ -117,6 +117,26 @@ local function UpdateTT(tt, unit, ttline)
   end
 end
 
+local function UpdateHBTT(unit)
+  local gtt = HealBot_Globals and HealBot_Globals.UseGameTooltip
+  debug("UpdateHBTT: unit="..(unit or "nil").." gtt="..(gtt or "nil"))
+  local tt = HealBot_Tooltip
+  local ttl = HealBot_TooltipTextL1
+  if gtt and gtt ~= 0 then 
+    tt = GameTooltip
+    ttl = GameTooltipTextLeft1
+  end
+  if true and unit == "player" then -- fix a stray role text added by healbot
+    local txt = ttl and ttl.GetText and ttl:GetText()
+    if txt then
+      txt = txt:gsub("^DAMAGER ",""):gsub("^TANK ",""):gsub("^HEALER ","")
+      ttl:SetText(txt)
+    end
+  end
+  UpdateTT(tt, unit, ttl)
+  HealBot_Tooltip_Show() -- fix size
+end
+
 local function VuhdoHook()
   if VuhDoTooltip and VuhDoTooltipTextL1 then
     local unit = VuhDoTooltipTextL1:GetText()
@@ -464,7 +484,7 @@ local function RegisterHooks()
     reg["gtt"] = true
   end
   if settings.tooltip and HealBot_Action_RefreshTooltip and not reg["hb"] then
-    hooksecurefunc("HealBot_Action_RefreshTooltip", function(unit) UpdateTT(GameTooltip,unit) end)
+    hooksecurefunc("HealBot_Action_RefreshTooltip", function(unit) UpdateHBTT(unit) end)
     reg["hb"] = true
   end
   if settings.hbicon and not reg["hbicon"] 
