@@ -296,7 +296,7 @@ local function UpdateRGF()
 	 local name = UnitName(unit)
          local guid = UnitGUID(unit)
 	 local lclass,class = UnitClass(unit)
-         if not class or #class == 0 then
+         if (not class or #class == 0) and btn.name then
             lclass,class = UnitClass(btn.name)
          end
 	 if class then
