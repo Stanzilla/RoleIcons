@@ -313,6 +313,7 @@ local function UpdateRGF()
 	     local color = RAID_CLASS_COLORS[class]
 	     name = string.format("\124cff%.2x%.2x%.2x", color.r*255, color.g*255, color.b*255)..name.."\124r"
 	   end
+	   lclass = lclass or ""
            local lvl = UnitLevel(unit)
            if not lvl or lvl == 0 then
              lvl = (btn.name and UnitLevel(btn.name)) or 0
