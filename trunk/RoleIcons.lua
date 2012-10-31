@@ -387,6 +387,8 @@ local function UpdateRGF()
     if btn then 
       if settings.classbuttons and UnitInRaid("player") and i <= 10 and not RaidInfoFrame:IsShown() then
         btn:Show()
+        local fs = _G["RaidClassButton"..i.."Count"]
+	if fs then fs:SetTextHeight(12) end -- got too small in 5.x for some reason
       else
         btn:Hide()
       end
