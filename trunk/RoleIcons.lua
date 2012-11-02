@@ -575,14 +575,20 @@ local function RegisterHooks()
       end)
     reg["rcboe"] = true
   end
-  if RolePollPopup_Show and not reg["rpp"] then
-     hooksecurefunc("RolePollPopup_Show", function() 
-       if settings.autorole and UnitGroupRolesAssigned("player") ~= "NONE" then 
-         --RolePollPopup:Hide() 
-         StaticPopupSpecial_Hide(RolePollPopup) -- ticket 4
-       end
-     end)
-     reg["rpp"] = true
+  if RolePollPopup and not reg["rpp"] then
+     addon.rppevent = RolePollPopup:GetScript("OnEvent")
+     if addon.rppevent then
+       RolePollPopup:SetScript("OnEvent", function(self, event, ...)
+         if settings.autorole and 
+	    UnitGroupRolesAssigned("player") ~= "NONE" and 
+	    event == "ROLE_POLL_BEGIN" then 
+	   debug("suppressed a RolePollPopup")
+	 else
+	   addon.rppevent(self, event, ...)
+	 end
+       end)
+       reg["rpp"] = true
+     end
   end
 end
 
