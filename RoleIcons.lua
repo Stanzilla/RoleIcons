@@ -554,7 +554,8 @@ local function RegisterHooks()
     lastrcb:ClearAllPoints()
     lastrcb:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",-1,15)
   end
-  if settings.rolebuttons and not addon.rolebuttons then
+  if settings.rolebuttons and not addon.rolebuttons 
+     and RaidClassButton1 then -- for RaidClassButtonTemplate
     addon.rolebuttons = {}
     local last
     for _,role in ipairs({"TANK","HEALER","DAMAGER"}) do
