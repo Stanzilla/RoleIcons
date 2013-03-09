@@ -386,7 +386,7 @@ local function UpdateRGF()
   for i=1,20 do
     local btn = _G["RaidClassButton"..i]
     if btn then 
-      if settings.classbuttons and UnitInRaid("player") and i <= 10 and not RaidInfoFrame:IsShown() then
+      if settings.classbuttons and UnitInRaid("player") and i <= MAX_CLASSES and not RaidInfoFrame:IsShown() then
         btn:Show()
         local fs = _G["RaidClassButton"..i.."Count"]
 	if fs then fs:SetTextHeight(12) end -- got too small in 5.x for some reason
@@ -530,11 +530,31 @@ local function RegisterHooks()
      _G.GetColoredName = GetColoredName_hook
      reg["gcn"] = true
   end
-  if settings.classbuttons and RaidClassButton10 then
-    RaidClassButton10:ClearAllPoints()
-    RaidClassButton10:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",-1,15)
+  local lastrcb = _G["RaidClassButton"..MAX_CLASSES]
+  if settings.classbuttons and lastrcb then
+    if not addon.rcbsetup then
+      addon.rcbsetup = true
+      -- since 5.x, RAID_CLASS_BUTTONS is initialized incorrectly, clobbering a class - so fix it
+      local extra = MAX_CLASSES + 1
+      for _, name in ipairs({"PETS","MAINTANK","MAINASSIST"}) do
+        RAID_CLASS_BUTTONS[name].button = extra
+	extra = extra + 1
+      end
+      for i = 1,MAX_CLASSES do -- squeeze layout to make everything fit
+        local rcb = _G["RaidClassButton"..i]
+	rcb:ClearAllPoints()
+	rcb:SetPoint("BOTTOM",_G["RaidClassButton"..(i+1)],"TOP",0,10)
+	-- more init fixups
+	rcb.class = CLASS_SORT_ORDER[i]
+	local icon = _G["RaidClassButton"..i.."IconTexture"] 
+	icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes");
+        icon:SetTexCoord(unpack(CLASS_ICON_TCOORDS[rcb.class]))
+      end
+    end
+    lastrcb:ClearAllPoints()
+    lastrcb:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",-1,15)
   end
-  if settings.rolebuttons and RaidClassButton1 and not addon.rolebuttons then
+  if settings.rolebuttons and not addon.rolebuttons then
     addon.rolebuttons = {}
     local last
     for _,role in ipairs({"TANK","HEALER","DAMAGER"}) do
@@ -560,7 +580,7 @@ local function RegisterHooks()
       addon.rolebuttons[role] = btn
       last = btn
     end
-    addon.rolebuttons["TANK"]:SetPoint("TOPLEFT",FriendsFrameCloseButton,"BOTTOMRIGHT",-4,16)
+    addon.rolebuttons["TANK"]:SetPoint("TOPLEFT",FriendsFrameCloseButton,"BOTTOMRIGHT",-4,18)
   end
   if RaidClassButton_OnEnter and not reg["rcboe"] then
     hooksecurefunc("RaidClassButton_OnEnter",function() 
