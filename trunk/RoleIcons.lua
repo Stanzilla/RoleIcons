@@ -96,6 +96,7 @@ frame:RegisterEvent("GROUP_ROSTER_UPDATE");
 frame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED");
 frame:RegisterEvent("PLAYER_TARGET_CHANGED");
 frame:RegisterEvent("PLAYER_FOCUS_CHANGED");
+frame:RegisterEvent("PLAYER_REGEN_ENABLED");
 
 local function UpdateTT(tt, unit, ttline)
   if not settings.tooltip then return end
@@ -635,10 +636,11 @@ local function OnEvent(frame, event, name, ...)
      UpdateTarget("focus")
   elseif event == "ROLE_POLL_BEGIN" or 
          event == "GROUP_ROSTER_UPDATE" or 
-	 event == "ACTIVE_TALENT_GROUP_CHANGED" then
+	 event == "ACTIVE_TALENT_GROUP_CHANGED" or
+	 event == "PLAYER_REGEN_ENABLED" then
      UpdateTarget("target")
      UpdateTarget("focus")
-     if settings.autorole then
+     if settings.autorole and not InCombatLockdown() then
        local currrole = UnitGroupRolesAssigned("player")
        if (currrole == "NONE" and event ~= "ACTIVE_TALENT_GROUP_CHANGED") or
           (currrole ~= "NONE" and event == "ACTIVE_TALENT_GROUP_CHANGED") then
