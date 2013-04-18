@@ -11,7 +11,7 @@ local InCombatLockdown, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, 
 local defaults = { 
   raid =         { true,  L["Show role icons on the Raid tab"] },
   tooltip =      { true,  L["Show role icons in player tooltips"] },
-  hbicon =       { false  L["Show role icons in HealBot bars"] },
+  hbicon =       { false, L["Show role icons in HealBot bars"] },
   chat =         { true,  L["Show role icons in chat windows"] },
   debug =        { false, L["Debug the addon"] },
   classbuttons = { true,  L["Add class summary buttons to the Raid tab"] },
