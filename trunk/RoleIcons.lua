@@ -489,7 +489,7 @@ local function RegisterHooks()
     reg["gtt"] = true
   end
   if settings.tooltip and HealBot_Action_RefreshTooltip and not reg["hb"] then
-    hooksecurefunc("HealBot_Action_RefreshTooltip", function(unit) UpdateHBTT(unit) end)
+    hooksecurefunc("HealBot_Action_RefreshTooltip", function() UpdateHBTT(HealBot_Data and HealBot_Data["TIPUNIT"]) end)
     reg["hb"] = true
   end
   if settings.hbicon and not reg["hbicon"] 
