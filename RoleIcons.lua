@@ -16,6 +16,7 @@ local defaults = {
   debug =        { false, L["Debug the addon"] },
   classbuttons = { true,  L["Add class summary buttons to the Raid tab"] },
   rolebuttons =  { true,  L["Add role summary buttons to the Raid tab"] },
+  serverinfo =   { true,  L["Add server info frame to the Raid tab"] },
   autorole =     { true,  L["Automatically set role and respond to role checks based on your spec"] },
   target =       { true,  L["Show role icons on the target frame (default Blizzard frames)"] },
   focus =        { true,  L["Show role icons on the focus frame (default Blizzard frames)"] },
@@ -223,7 +224,9 @@ local function DisplayTokenTooltip()
   if not UnitInRaid("player") then return end
 
   GameTooltip:ClearLines()
-  GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
+  --GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
+  GameTooltip:SetOwner(addon.headerFrame)
+  GameTooltip:SetAnchorType("ANCHOR_TOPLEFT")
   local total = 0
   local summstr = ""
   for _,role in ipairs({"TANK","HEALER","DAMAGER"}) do
@@ -259,6 +262,46 @@ local function DisplayTokenTooltip()
 
 end
 
+local function DisplayServerTooltip()
+  if not UnitInRaid("player") or not addon.serverList then return end
+
+  GameTooltip:ClearLines()
+  --GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
+  GameTooltip:SetOwner(addon.serverFrame)
+  GameTooltip:SetAnchorType("ANCHOR_BOTTOMRIGHT",-1*addon.serverFrame:GetWidth())
+  GameTooltip:AddLine(L["Server breakdown:"],1,1,1)
+  GameTooltip:AddDoubleLine(L["Server"], L["Players"], 1,1,1,1,1,1)
+
+  local level = addon.serverList[1].maxlevel
+  local showlevel = false
+  for _,info in ipairs(addon.serverList) do
+    if info.maxlevel ~= level then 
+      showlevel = true
+      break
+    end
+  end
+  for _,info in ipairs(addon.serverList) do
+    local num = info.num
+    local name = info.name
+    if showlevel then
+      name = name.." ("..LEVEL.." "..info.maxlevel..")"
+    end
+    GameTooltip:AddDoubleLine(name, num)
+  end
+
+  GameTooltip:Show()
+end
+
+local function SortServers(a,b)
+  if a.maxlevel ~= b.maxlevel then
+    return a.maxlevel > b.maxlevel, true
+  elseif a.num ~= b.num then
+    return a.num > b.num, true
+  else
+    return a.name < b.name
+  end
+end
+
 local function UpdateRGF()
   if not RaidFrame then return end
   if UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") then
@@ -281,6 +324,11 @@ local function UpdateRGF()
   wipe(rolecall)
   local guessmaxraidlvl = addon.maxraidlvl or maxlvl
   addon.maxraidlvl = 0
+  addon.servers = addon.servers or {}
+  for _,info in pairs(addon.servers) do
+    info.num = 0
+    info.maxlevel = 0
+  end
   for i=1,40 do
     local btn = _G["RaidGroupButton"..i]
     if btn then
@@ -295,32 +343,39 @@ local function UpdateRGF()
        local unit = btn.unit
        if unit then
          local role = UnitGroupRolesAssigned(unit)
-	 local name = UnitName(unit)
+	 local name, realm = UnitName(unit)
          local guid = UnitGUID(unit)
 	 local lclass,class = UnitClass(unit)
+	 if not realm or realm == "" then realm = GetRealmName() end
          if (not class or #class == 0) and btn.name then
             lclass,class = UnitClass(btn.name)
          end
 	 if class then
            classcnt[class] = (classcnt[class] or 0) + 1
 	 end
+         local lvl = UnitLevel(unit)
+         if not lvl or lvl == 0 then
+           lvl = (btn.name and UnitLevel(btn.name)) or 0
+         end
+	 addon.maxraidlvl = math.max(addon.maxraidlvl, lvl or 0)
+
+	 local r = addon.servers[realm] or { num=0, maxlevel=0, name=realm }
+	 addon.servers[realm] = r
+	 r.num = r.num + 1 
+	 r.maxlevel = math.max(r.maxlevel, lvl)
+
          if addon.unitstatus[guid] then
             btn:GetNormalTexture():SetTexture(0.5,0,0)
          end
+	 if class then
+	   local color = RAID_CLASS_COLORS[class]
+	   name = string.format("\124cff%.2x%.2x%.2x", color.r*255, color.g*255, color.b*255)..name.."\124r"
+	 end
 	 role = role or "NONE"
 	 rolecnt[role] = (rolecnt[role] or 0) + 1
 	 rolecall[role] = ((rolecall[role] and rolecall[role]..", ") or "")..name
          if role ~= "NONE" then
-	   if class then
-	     local color = RAID_CLASS_COLORS[class]
-	     name = string.format("\124cff%.2x%.2x%.2x", color.r*255, color.g*255, color.b*255)..name.."\124r"
-	   end
 	   lclass = lclass or ""
-           local lvl = UnitLevel(unit)
-           if not lvl or lvl == 0 then
-             lvl = (btn.name and UnitLevel(btn.name)) or 0
-           end
-	   addon.maxraidlvl = math.max(addon.maxraidlvl, lvl or 0)
            if settings.raid then
 	    local txt1 = lvl
 	    local txt2 = lclass
@@ -403,6 +458,48 @@ local function UpdateRGF()
     addon.headerFrame:Show()
     addon.headerFrame:SetScript("OnEnter", function() DisplayTokenTooltip() end)
     addon.headerFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  end
+  if settings.serverinfo then
+    if not addon.serverFrame then
+      addon.serverFrame = CreateFrame("Button", addonName.."ServerButton", RaidFrame, "InsetFrameTemplate3")
+      addon.serverFrame:ClearAllPoints()
+      addon.serverFrame:SetPoint("TOPRIGHT",RaidFrame,-27,-2)
+      addon.serverFrame:SetSize(120,20)
+      addon.serverText = addon.serverFrame:CreateFontString(nil,"ARTWORK","GameFontNormalSmall")
+      addon.serverText:SetPoint("LEFT",addon.serverFrame,10,0)
+      addon.serverFrame:SetScript("OnEnter", function() DisplayServerTooltip() end)
+      addon.serverFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    end
+    local list = wipe(addon.serverList or {})
+    addon.serverList = list
+    local cnt = 0
+    for server, info in pairs(addon.servers) do
+      if info.num > 0 then
+        table.insert(list, info)
+	cnt = cnt + 1
+      end
+    end
+    if cnt < 2 then
+      addon.serverFrame:Hide()
+    else
+      table.sort(list, SortServers)
+      local curr = list[1].name
+      if not select(2,SortServers(addon.serverList[1],addon.serverList[2])) then
+        curr = curr .. " ?"
+      end
+      if list[1].maxlevel > list[2].maxlevel or 
+         list[1].num >= list[2].num + 2 then
+	 curr = "|cff19ff19"..curr .. "|r" -- green
+      elseif list[1].num >= list[2].num + 1 then
+	 curr = "|cffffff00"..curr .. "|r" -- yellow
+      else
+	 curr = "|cffff1919"..curr .. "|r" -- red
+      end
+      addon.serverText:SetText(curr)
+      addon.serverFrame:Show()
+    end
+  elseif addon.serverFrame then
+      addon.serverFrame:Hide()
   end
 end
 addon.UpdateRGF = UpdateRGF
@@ -566,8 +663,10 @@ local function RegisterHooks()
       icon:SetTexCoord(getRoleTexCoord(role))
       btn:SetScript("OnLoad",function(self) end)
       btn:SetScript("OnEnter",function(self) 
-        GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
-        GameTooltip:SetText(_G[role] .. " ("..(btn.rolecnt or 0)..")") 
+        --GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
+	GameTooltip:SetOwner(self)
+	GameTooltip:SetAnchorType("ANCHOR_RIGHT")
+        GameTooltip:SetText(getRoleTex(role).._G[role] .. " ("..(btn.rolecnt or 0)..")") 
 	if btn.rolecall then
           GameTooltip:AddLine(btn.rolecall,1,1,1,true) 
 	end
@@ -585,16 +684,25 @@ local function RegisterHooks()
     addon.rolebuttons["TANK"]:SetPoint("TOPLEFT",FriendsFrameCloseButton,"BOTTOMRIGHT",-4,18)
   end
   if RaidClassButton_OnEnter and not reg["rcboe"] then
-    hooksecurefunc("RaidClassButton_OnEnter",function() 
+    hooksecurefunc("RaidClassButton_OnEnter",function(self) 
         for i=1,10 do
 	  local line = _G["GameTooltipTextLeft"..i]
 	  local text = line and line:GetText()
+	  if i == 1 and text then -- class color header line
+	    local class = self.fileName
+	    local color = class and RAID_CLASS_COLORS[class]
+	    if color then
+	      line:SetTextColor(color.r, color.g, color.b, 1)
+	    end
+	  end
 	  if text and string.find(text,TOOLTIP_RAID_CLASS_BUTTON,1,true) then
 	    line:SetText("")
 	    GameTooltip:Show() -- resize
 	    break
 	  end
 	end
+	GameTooltip:ClearAllPoints()
+	GameTooltip:SetPoint("BOTTOMLEFT",self,"TOPRIGHT")
       end)
     reg["rcboe"] = true
   end
