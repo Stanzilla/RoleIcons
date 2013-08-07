@@ -263,7 +263,8 @@ local function DisplayTokenTooltip()
 end
 
 local function DisplayServerTooltip()
-  if not UnitInRaid("player") or not addon.serverList then return end
+  addon:UpdateServers()
+  if not addon.serverList or not addon.serverFrame then return end
 
   GameTooltip:ClearLines()
   --GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
@@ -324,11 +325,6 @@ local function UpdateRGF()
   wipe(rolecall)
   local guessmaxraidlvl = addon.maxraidlvl or maxlvl
   addon.maxraidlvl = 0
-  addon.servers = addon.servers or {}
-  for _,info in pairs(addon.servers) do
-    info.num = 0
-    info.maxlevel = 0
-  end
   for i=1,40 do
     local btn = _G["RaidGroupButton"..i]
     if btn then
@@ -343,10 +339,9 @@ local function UpdateRGF()
        local unit = btn.unit
        if unit then
          local role = UnitGroupRolesAssigned(unit)
-	 local name, realm = UnitName(unit)
+	 local name = UnitName(unit)
          local guid = UnitGUID(unit)
 	 local lclass,class = UnitClass(unit)
-	 if not realm or realm == "" then realm = GetRealmName() end
          if (not class or #class == 0) and btn.name then
             lclass,class = UnitClass(btn.name)
          end
@@ -358,11 +353,6 @@ local function UpdateRGF()
            lvl = (btn.name and UnitLevel(btn.name)) or 0
          end
 	 addon.maxraidlvl = math.max(addon.maxraidlvl, lvl or 0)
-
-	 local r = addon.servers[realm] or { num=0, maxlevel=0, name=realm }
-	 addon.servers[realm] = r
-	 r.num = r.num + 1 
-	 r.maxlevel = math.max(r.maxlevel, lvl)
 
          if addon.unitstatus[guid] then
             btn:GetNormalTexture():SetTexture(0.5,0,0)
@@ -459,50 +449,105 @@ local function UpdateRGF()
     addon.headerFrame:SetScript("OnEnter", function() DisplayTokenTooltip() end)
     addon.headerFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
   end
-  if settings.serverinfo then
-    if not addon.serverFrame then
+  addon:UpdateServers()
+end
+addon.UpdateRGF = UpdateRGF
+
+function addon:UpdateServers()
+  addon.servers = addon.servers or {}
+  addon.levelcache = addon.levelcache or {}
+  for _,info in pairs(addon.servers) do
+    info.num = 0
+    info.maxlevel = 0
+  end
+  local num = GetNumGroupMembers()
+  for i=1,num do
+    local name, realm, level
+    if IsInRaid() then
+      local _
+      name, _, _, level = GetRaidRosterInfo(i)
+      realm = name and name:match("-([^-]+)$")
+      if not level or level == 0 then level = UnitLevel("raid"..i) end -- empty for offline
+    else
+      local unit = "player"
+      if i < num then unit = "party"..i end
+      name, realm = UnitName(unit)
+      level = UnitLevel(unit)
+    end
+    if name and level then
+      if not realm or realm == "" then realm = GetRealmName() end
+      local fullname = name
+      if not name:match("-([^-]+)$") then fullname = name.."-"..realm end
+      if level > 0 then -- sometimes level is not queryable for offline
+        addon.levelcache[fullname] = level 
+      else
+        level = addon.levelcache[fullname] or 0
+      end
+
+      local r = addon.servers[realm] or { num=0, maxlevel=0, name=realm }
+      addon.servers[realm] = r
+      r.num = r.num + 1 
+      r.maxlevel = math.max(r.maxlevel, level)
+    end
+  end
+
+  if not addon.serverFrame then
       addon.serverFrame = CreateFrame("Button", addonName.."ServerButton", RaidFrame, "InsetFrameTemplate3")
       addon.serverFrame:ClearAllPoints()
       addon.serverFrame:SetPoint("TOPRIGHT",RaidFrame,-27,-2)
-      addon.serverFrame:SetSize(120,20)
+      addon.serverFrame:SetSize(125,20)
       addon.serverText = addon.serverFrame:CreateFontString(nil,"ARTWORK","GameFontNormalSmall")
       addon.serverText:SetPoint("LEFT",addon.serverFrame,10,0)
       addon.serverFrame:SetScript("OnEnter", function() DisplayServerTooltip() end)
       addon.serverFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  end
+  local list = wipe(addon.serverList or {})
+  addon.serverList = list
+  local cnt = 0
+  for server, info in pairs(addon.servers) do
+    if info.num > 0 then
+      table.insert(list, info)
+      cnt = cnt + 1
     end
-    local list = wipe(addon.serverList or {})
-    addon.serverList = list
-    local cnt = 0
-    for server, info in pairs(addon.servers) do
-      if info.num > 0 then
-        table.insert(list, info)
-	cnt = cnt + 1
-      end
-    end
-    if cnt < 2 then
-      addon.serverFrame:Hide()
+  end
+  if cnt < 2 then
+    addon.serverFrame:Hide()
+    addon.lastServer = list[1] -- nil for ungrouped
+  else
+    table.sort(list, SortServers)
+    local old = addon.lastServer
+    local curr = list[1].name
+    local color
+    if list[1].maxlevel > list[2].maxlevel or 
+       list[1].num >= list[2].num + 2 then
+       color = "|cff19ff19" -- green
+       addon.lastServer = list[1]
+    elseif list[1].num >= list[2].num + 1 then
+       color = "|cffffff00" -- yellow
+       addon.lastServer = list[1]
     else
-      table.sort(list, SortServers)
-      local curr = list[1].name
-      if not select(2,SortServers(addon.serverList[1],addon.serverList[2])) then
-        curr = curr .. " ?"
-      end
-      if list[1].maxlevel > list[2].maxlevel or 
-         list[1].num >= list[2].num + 2 then
-	 curr = "|cff19ff19"..curr .. "|r" -- green
-      elseif list[1].num >= list[2].num + 1 then
-	 curr = "|cffffff00"..curr .. "|r" -- yellow
-      else
-	 curr = "|cffff1919"..curr .. "|r" -- red
-      end
-      addon.serverText:SetText(curr)
-      addon.serverFrame:Show()
+       color = "|cffff1919" -- red
+       if old and not select(2,SortServers(addon.serverList[1],old)) then
+         curr = old.name
+       else
+	 curr = curr.." ?"
+	 addon.lastServer = nil
+       end
     end
-  elseif addon.serverFrame then
+    local new = addon.lastServer
+    if settings.serverinfo and new and old and new ~= old then
+      chatMsg(L["Probable realm transfer"]..": "..
+              old.name.." ("..old.num.." "..L["Players"].." / "..LEVEL.." "..old.maxlevel..")  ->  "..
+              new.name.." ("..new.num.." "..L["Players"].." / "..LEVEL.." "..new.maxlevel..")")
+    end
+    if settings.serverinfo then
+      addon.serverText:SetText(color..curr.."|r")
+      addon.serverFrame:Show()
+    else
       addon.serverFrame:Hide()
+    end
   end
 end
-addon.UpdateRGF = UpdateRGF
 
 local function ChatFilter(self, event, message, sender, ...)
   if not settings.chat then return false end
@@ -735,6 +780,7 @@ local function OnEvent(frame, event, name, ...)
      end
      addon:SetupVersion()
      RegisterHooks() 
+     addon:UpdateServers()
   elseif event == "ADDON_LOADED" then
      debug("ADDON_LOADED: "..name)
      RegisterHooks() 
@@ -761,6 +807,9 @@ local function OnEvent(frame, event, name, ...)
          end
        end
      end
+  end
+  if event == "GROUP_ROSTER_UPDATE" then
+    addon:UpdateServers()
   end
 end
 frame:SetScript("OnEvent", OnEvent);
