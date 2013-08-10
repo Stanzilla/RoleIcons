@@ -17,6 +17,7 @@ local defaults = {
   classbuttons = { true,  L["Add class summary buttons to the Raid tab"] },
   rolebuttons =  { true,  L["Add role summary buttons to the Raid tab"] },
   serverinfo =   { true,  L["Add server info frame to the Raid tab"] },
+  trimserver =   { true,  L["Trim server names in tooltips"] },
   autorole =     { true,  L["Automatically set role and respond to role checks based on your spec"] },
   target =       { true,  L["Show role icons on the target frame (default Blizzard frames)"] },
   focus =        { true,  L["Show role icons on the focus frame (default Blizzard frames)"] },
@@ -122,7 +123,11 @@ local function toonList(role, class)
          ((not class) or (class and class == uclass)) then
          uname = uname:gsub("%s","")
 	 table.insert(sorttemp,uname)
-	 local cname = classColor(uname, uclass, unitid)
+	 local cname = uname
+	 if settings.trimserver and cname:match("-[^-]+$") then
+	   cname = cname:gsub("(-[^-][^-][^-])[^-]*$","%1")
+	 end
+	 cname = classColor(cname, uclass, unitid)
 	 if not role and urole and urole ~= "NONE" then
 	   cname = getRoleTex(urole)..cname
 	 end
