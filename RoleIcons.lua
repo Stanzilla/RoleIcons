@@ -71,7 +71,7 @@ local function getRoleTexCoord(role)
 end
 
 local function chatMsg(msg)
-     DEFAULT_CHAT_FRAME:AddMessage(LaddonName..": "..msg)
+     DEFAULT_CHAT_FRAME:AddMessage("|cff6060ff"..LaddonName.."|r: "..msg)
 end
 local function debug(msg)
   if settings and settings.debug then
