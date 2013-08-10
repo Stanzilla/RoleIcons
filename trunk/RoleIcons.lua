@@ -79,6 +79,66 @@ local function debug(msg)
   end
 end
 
+local function classColor(name, class, unit)
+   if not class then return name end
+   local color = RAID_CLASS_COLORS[class]
+   color = color and color.colorStr
+   if unit and UnitExists(unit) then
+     if not UnitIsConnected(unit) then
+       color = "ff808080" -- grey
+     elseif UnitIsDeadOrGhost(unit) then
+       color = "ffff1919" -- red
+     end
+   end
+   if color then
+     name = "\124c"..color..name.."\124r"
+   end
+   return name
+end
+
+local sorttemp = {}
+local infotemp = {}
+local function toonList(role, class)
+  wipe(sorttemp)
+  wipe(infotemp)
+  local base = IsInRaid() and "raid" or "party"
+  local num = GetNumGroupMembers()
+  local cnt = 0
+  for i=1,num do
+    local unitid
+    if IsInRaid() then
+      unitid = "raid"..i
+    elseif i == num then
+      unitid = "player"
+    else
+      unitid = "party"..i
+    end
+    if UnitExists(unitid) then
+      local uname = GetUnitName(unitid, true)
+      local urole = UnitGroupRolesAssigned(unitid)
+      local uclass = select(2,UnitClass(unitid))
+      if uname and uclass and
+         ((not role)  or (role and role == urole)) and
+         ((not class) or (class and class == uclass)) then
+         uname = uname:gsub("%s","")
+	 table.insert(sorttemp,uname)
+	 local cname = classColor(uname, uclass, unitid)
+	 if not role and urole and urole ~= "NONE" then
+	   cname = getRoleTex(urole)..cname
+	 end
+	 infotemp[uname] = cname
+	 cnt = cnt + 1
+      end
+    end
+  end
+  table.sort(sorttemp)
+  local res
+  for _, name in ipairs(sorttemp) do 
+    res = (res and res..", " or "")..infotemp[name]
+  end
+  return res, cnt
+end
+
 local function myDefaultRole()
   local _, class = UnitClass("player")
   if class == "MAGE" or class == "HUNTER" or class == "WARLOCK" or class == "ROGUE" then
@@ -208,7 +268,6 @@ end
 
 local classcnt = {}
 local rolecnt = {}
-local rolecall = {}
 
 local LC = {}
 FillLocalizedClassList(LC, false)
@@ -248,10 +307,8 @@ local function DisplayTokenTooltip()
       local class = ci[1]
       local lclass = ci[2]
       cnt = cnt + (classcnt[class] or 0)
-      local color = RAID_CLASS_COLORS[class]
-      local classstr = string.format("\124cff%.2x%.2x%.2x", color.r*255, color.g*255, color.b*255)..lclass.."\124r"
       if #tokenstr >  0 then tokenstr = tokenstr..", " end
-      tokenstr = tokenstr..classstr
+      tokenstr = tokenstr..classColor(lclass,class)
     end
     GameTooltip:AddLine("\124cffff0000"..cnt.."\124r".."  \124cffffffff"..token.." (\124r"..tokenstr.."\124cffffffff)\124r")
   end
@@ -322,7 +379,6 @@ local function UpdateRGF()
   end
   wipe(classcnt)
   wipe(rolecnt)
-  wipe(rolecall)
   local guessmaxraidlvl = addon.maxraidlvl or maxlvl
   addon.maxraidlvl = 0
   for i=1,40 do
@@ -357,13 +413,9 @@ local function UpdateRGF()
          if addon.unitstatus[guid] then
             btn:GetNormalTexture():SetTexture(0.5,0,0)
          end
-	 if class then
-	   local color = RAID_CLASS_COLORS[class]
-	   name = string.format("\124cff%.2x%.2x%.2x", color.r*255, color.g*255, color.b*255)..name.."\124r"
-	 end
+	 name = classColor(name, class, unit)
 	 role = role or "NONE"
 	 rolecnt[role] = (rolecnt[role] or 0) + 1
-	 rolecall[role] = ((rolecall[role] and rolecall[role]..", ") or "")..name
          if role ~= "NONE" then
 	   lclass = lclass or ""
            if settings.raid then
@@ -421,7 +473,6 @@ local function UpdateRGF()
   for role,btn in pairs(addon.rolebuttons) do
     if settings.rolebuttons and UnitInRaid("player") and not RaidInfoFrame:IsShown() then  
       btn.rolecnt = rolecnt[role] or 0
-      btn.rolecall = rolecall[role]
       _G[btn:GetName().."Count"]:SetText(btn.rolecnt)
       btn:Show()
     else
@@ -686,65 +737,73 @@ local function RegisterHooks()
       for i = 1,MAX_CLASSES do -- squeeze layout to make everything fit
         local rcb = _G["RaidClassButton"..i]
 	rcb:ClearAllPoints()
-	rcb:SetPoint("BOTTOM",_G["RaidClassButton"..(i+1)],"TOP",0,10)
+	rcb:SetSize(20,20)
+	local bkg = rcb:GetRegions() -- background graphic is off-center and needs to be slid up
+	bkg:ClearAllPoints()
+	--bkg:SetPoint("TOPLEFT",0,7)
+	bkg:SetPoint("TOPLEFT",-2,7)
+	rcb:SetPoint("BOTTOM",_G["RaidClassButton"..(i+1)],"TOP",0,6) -- spacing
 	-- more init fixups
 	rcb.class = CLASS_SORT_ORDER[i]
 	local icon = _G["RaidClassButton"..i.."IconTexture"] 
+	icon:SetAllPoints()
 	icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes");
         icon:SetTexCoord(unpack(CLASS_ICON_TCOORDS[rcb.class]))
       end
     end
     lastrcb:ClearAllPoints()
-    lastrcb:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",-1,15)
+    lastrcb:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",1,10)
   end
   if settings.rolebuttons and not addon.rolebuttons 
      and RaidClassButton1 then -- for RaidClassButtonTemplate
     addon.rolebuttons = {}
     local last
-    for _,role in ipairs({"TANK","HEALER","DAMAGER"}) do
+    for idx,role in ipairs({"TANK","HEALER","DAMAGER"}) do
       local btn = CreateFrame("Button", addonName.."RoleButton"..role, RaidFrame, "RaidClassButtonTemplate")
+      btn:SetFrameLevel(RaidFrame:GetFrameLevel()+5-idx)
       local icon = _G[btn:GetName().."IconTexture"];
-      icon:SetTexture(role_tex_file)
-      icon:SetTexCoord(getRoleTexCoord(role))
+      if false then -- low-res
+        icon:SetTexture(role_tex_file)
+        icon:SetTexCoord(getRoleTexCoord(role))
+      else -- hi-res
+        icon:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES")
+        icon:SetTexCoord(GetTexCoordsForRole(role))
+      end
+      icon:SetAllPoints()
       btn:SetScript("OnLoad",function(self) end)
       btn:SetScript("OnEnter",function(self) 
         --GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
 	GameTooltip:SetOwner(self)
 	GameTooltip:SetAnchorType("ANCHOR_RIGHT")
         GameTooltip:SetText(getRoleTex(role).._G[role] .. " ("..(btn.rolecnt or 0)..")") 
-	if btn.rolecall then
-          GameTooltip:AddLine(btn.rolecall,1,1,1,true) 
-	end
+        GameTooltip:AddLine(toonList(role),1,1,1,true) 
 	GameTooltip:Show()
       end)
+      local bkg = btn:GetRegions() -- background graphic is off-center and needs to be slid up
+      bkg:ClearAllPoints()
+      bkg:SetPoint("TOPLEFT",-2,8)
       btn:ClearAllPoints()
       if last then
         btn:SetPoint("TOPLEFT", last, "BOTTOMLEFT",0,-4)
       end
+      btn:SetSize(20,20)
       btn:SetScale(1.6)
       btn:Show()
       addon.rolebuttons[role] = btn
       last = btn
     end
-    addon.rolebuttons["TANK"]:SetPoint("TOPLEFT",FriendsFrameCloseButton,"BOTTOMRIGHT",-4,18)
+    addon.rolebuttons["TANK"]:SetPoint("TOPLEFT",FriendsFrameCloseButton,"BOTTOMRIGHT",-1,8)
   end
   if RaidClassButton_OnEnter and not reg["rcboe"] then
     hooksecurefunc("RaidClassButton_OnEnter",function(self) 
-        for i=1,10 do
-	  local line = _G["GameTooltipTextLeft"..i]
-	  local text = line and line:GetText()
-	  if i == 1 and text then -- class color header line
-	    local class = self.fileName
-	    local color = class and RAID_CLASS_COLORS[class]
-	    if color then
-	      line:SetTextColor(color.r, color.g, color.b, 1)
-	    end
-	  end
-	  if text and string.find(text,TOOLTIP_RAID_CLASS_BUTTON,1,true) then
-	    line:SetText("")
-	    GameTooltip:Show() -- resize
-	    break
-	  end
+	local class = self.fileName
+	local lclass = class and LC[class]
+	if class and lclass then
+	  local list, cnt = toonList(nil, class)
+	  GameTooltip:ClearLines()
+	  GameTooltip:SetText(classColor(lclass,class).." ("..cnt..")")
+	  GameTooltip:AddLine(list)
+	  GameTooltip:Show()
 	end
 	GameTooltip:ClearAllPoints()
 	GameTooltip:SetPoint("BOTTOMLEFT",self,"TOPRIGHT")
