@@ -369,7 +369,7 @@ function addon:ServerChatString(maxentries)
   local cnt = 0
   for _,info in ipairs(addon.serverList) do
     if cnt == maxentries or #str > 200 then 
-      str = str.."..."
+      str = str..", ..."
       break 
     end
     cnt = cnt + 1
