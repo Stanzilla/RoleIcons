@@ -41,6 +41,8 @@ local chats = {
 	CHAT_MSG_BATTLEGROUND_LEADER = 1, CHAT_MSG_BATTLEGROUND = 1,
 	}
 
+local TTframe, TTfunc
+
 local iconsz = 19 
 local riconsz = iconsz
 local role_tex_file = "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES.blp"
@@ -290,6 +292,8 @@ local function DisplayTokenTooltip()
   GameTooltip:ClearLines()
   --GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
   GameTooltip:SetOwner(addon.headerFrame)
+  TTframe = addon.headerFrame
+  TTfunc = DisplayTokenTooltip
   GameTooltip:SetAnchorType("ANCHOR_TOPLEFT")
   local total = 0
   local summstr = ""
@@ -331,6 +335,8 @@ local function DisplayServerTooltip()
   GameTooltip:ClearLines()
   --GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
   GameTooltip:SetOwner(addon.serverFrame)
+  TTframe = addon.serverFrame
+  TTfunc = DisplayServerTooltip
   GameTooltip:SetAnchorType("ANCHOR_BOTTOMRIGHT",-1*addon.serverFrame:GetWidth())
   GameTooltip:AddLine(L["Server breakdown:"],1,1,1)
   GameTooltip:AddDoubleLine(L["Server"], L["Players"], 1,1,1,1,1,1)
@@ -357,7 +363,6 @@ local function DisplayServerTooltip()
   GameTooltip:Show()
 end
 
-local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE]
 function addon:ServerChatString(maxentries)
   local level = addon.serverList[1].maxlevel
   local str = ""
@@ -526,7 +531,7 @@ local function UpdateRGF()
     addon.headerFrame:SetSize(74,74)
     addon.headerFrame:Show()
     addon.headerFrame:SetScript("OnEnter", function() DisplayTokenTooltip() end)
-    addon.headerFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    addon.headerFrame:SetScript("OnLeave", function() TTframe = nil; GameTooltip:Hide() end)
   end
   addon:UpdateServers()
 end
@@ -578,7 +583,7 @@ function addon:UpdateServers(intt)
       addon.serverText = addon.serverFrame:CreateFontString(nil,"ARTWORK","GameFontNormalSmall")
       addon.serverText:SetPoint("LEFT",addon.serverFrame,10,0)
       addon.serverFrame:SetScript("OnEnter", function() DisplayServerTooltip() end)
-      addon.serverFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+      addon.serverFrame:SetScript("OnLeave", function() TTframe = nil; GameTooltip:Hide() end)
       addon.serverFrame:SetScript("OnClick", function() 
         local str = addon:ServerChatString()
 	local chat
@@ -640,9 +645,9 @@ function addon:UpdateServers(intt)
       addon.serverFrame:Hide()
     end
   end
-  if not intt and addon.serverFrame and 
-     GameTooltip:IsShown() and GameTooltip:GetOwner() == addon.serverFrame then -- dynamically update tooltip
-     DisplayServerTooltip()
+  if not intt and TTframe and TTfunc and 
+     GameTooltip:IsShown() and GameTooltip:GetOwner() == TTframe then -- dynamically update tooltip
+     TTfunc(TTframe)
   end
 end
 
@@ -817,14 +822,18 @@ local function RegisterHooks()
       end
       icon:SetAllPoints()
       btn:SetScript("OnLoad",function(self) end)
-      btn:SetScript("OnEnter",function(self) 
+      local function ttfn(self) 
         --GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
 	GameTooltip:SetOwner(self)
+        TTframe = self
+        TTfunc = ttfn 
 	GameTooltip:SetAnchorType("ANCHOR_RIGHT")
         GameTooltip:SetText(getRoleTex(role).._G[role] .. " ("..(btn.rolecnt or 0)..")") 
         GameTooltip:AddLine(toonList(role),1,1,1,true) 
 	GameTooltip:Show()
-      end)
+      end
+      btn:SetScript("OnEnter",ttfn)
+      btn:SetScript("OnLeave",function() TTframe = nil; GameTooltip:Hide() end)
       local bkg = btn:GetRegions() -- background graphic is off-center and needs to be slid up
       bkg:ClearAllPoints()
       bkg:SetPoint("TOPLEFT",-2,8)
@@ -841,9 +850,12 @@ local function RegisterHooks()
     addon.rolebuttons["TANK"]:SetPoint("TOPLEFT",FriendsFrameCloseButton,"BOTTOMRIGHT",-1,8)
   end
   if RaidClassButton_OnEnter and not reg["rcboe"] then
-    hooksecurefunc("RaidClassButton_OnEnter",function(self) 
+    local function rcb_onenter(self) 
 	local class = self.fileName
 	local lclass = class and LC[class]
+	GameTooltip:SetOwner(self)
+        TTframe = self
+        TTfunc = rcb_onenter
 	if class and lclass then
 	  local list, cnt = toonList(nil, class)
 	  GameTooltip:ClearLines()
@@ -853,7 +865,8 @@ local function RegisterHooks()
 	end
 	GameTooltip:ClearAllPoints()
 	GameTooltip:SetPoint("BOTTOMLEFT",self,"TOPRIGHT")
-      end)
+    end
+    hooksecurefunc("RaidClassButton_OnEnter", rcb_onenter)
     reg["rcboe"] = true
   end
   if RolePollPopup and not reg["rpp"] then
