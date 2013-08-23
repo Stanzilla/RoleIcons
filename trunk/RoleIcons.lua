@@ -325,7 +325,7 @@ local function DisplayTokenTooltip()
 end
 
 local function DisplayServerTooltip()
-  addon:UpdateServers()
+  addon:UpdateServers(true)
   if not addon.serverList or not addon.serverFrame then return end
 
   GameTooltip:ClearLines()
@@ -352,7 +352,30 @@ local function DisplayServerTooltip()
     GameTooltip:AddDoubleLine(name, num)
   end
 
+  GameTooltip:AddLine(" ")
+  GameTooltip:AddLine(L["Left-click to report in chat"],1,1,1)
   GameTooltip:Show()
+end
+
+local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE]
+function addon:ServerChatString(maxentries)
+  local level = addon.serverList[1].maxlevel
+  local str = ""
+  local cnt = 0
+  for _,info in ipairs(addon.serverList) do
+    if cnt == maxentries or #str > 200 then 
+      str = str.."..."
+      break 
+    end
+    cnt = cnt + 1
+    if #str > 0 then str = str .. ", " end
+    local lvlstr = ""
+    if level < maxlvl or info.maxlevel < level then
+      lvlstr = "/"..LEVEL.." "..info.maxlevel
+    end
+    str = str..info.name.."("..info.num..lvlstr..")"
+  end
+  return L["Server breakdown:"].." "..str
 end
 
 local function SortServers(a,b)
@@ -509,7 +532,7 @@ local function UpdateRGF()
 end
 addon.UpdateRGF = UpdateRGF
 
-function addon:UpdateServers()
+function addon:UpdateServers(intt)
   addon.servers = addon.servers or {}
   addon.levelcache = addon.levelcache or {}
   for _,info in pairs(addon.servers) do
@@ -556,6 +579,20 @@ function addon:UpdateServers()
       addon.serverText:SetPoint("LEFT",addon.serverFrame,10,0)
       addon.serverFrame:SetScript("OnEnter", function() DisplayServerTooltip() end)
       addon.serverFrame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+      addon.serverFrame:SetScript("OnClick", function() 
+        local str = addon:ServerChatString()
+	local chat
+	if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
+	  chat = "INSTANCE_CHAT"
+	elseif IsInRaid() then
+	  chat = "RAID"
+	elseif IsInGroup() then
+	  chat = "PARTY"
+	else
+	  return
+	end
+	SendChatMessage(str, chat)
+     end)
   end
   local list = wipe(addon.serverList or {})
   addon.serverList = list
@@ -602,6 +639,10 @@ function addon:UpdateServers()
     else
       addon.serverFrame:Hide()
     end
+  end
+  if not intt and addon.serverFrame and 
+     GameTooltip:IsShown() and GameTooltip:GetOwner() == addon.serverFrame then -- dynamically update tooltip
+     DisplayServerTooltip()
   end
 end
 
