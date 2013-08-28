@@ -633,7 +633,8 @@ function addon:UpdateServers(intt)
        end
     end
     local new = addon.lastServer
-    if settings.serverinfo and new and old and new ~= old then
+    if settings.serverinfo and not IsInInstance() and
+       new and old and new ~= old then
       chatMsg(L["Probable realm transfer"]..": "..
               old.name.." ("..old.num.." "..L["Players"].." / "..LEVEL.." "..old.maxlevel..")  ->  "..
               new.name.." ("..new.num.." "..L["Players"].." / "..LEVEL.." "..new.maxlevel..")")
@@ -860,7 +861,7 @@ local function RegisterHooks()
 	  local list, cnt = toonList(nil, class)
 	  GameTooltip:ClearLines()
 	  GameTooltip:SetText(classColor(lclass,class).." ("..cnt..")")
-	  GameTooltip:AddLine(list)
+	  GameTooltip:AddLine(list,1,1,1,true)
 	  GameTooltip:Show()
 	end
 	GameTooltip:ClearAllPoints()
