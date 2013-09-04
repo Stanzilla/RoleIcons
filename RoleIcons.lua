@@ -380,7 +380,7 @@ function addon:ServerChatString(maxentries)
     end
     str = str..info.name.."("..info.num..lvlstr..")"
   end
-  return L["Server breakdown:"].." "..str
+  return addonName..": "..L["Server breakdown:"].." "..str
 end
 
 local function SortServers(a,b)
