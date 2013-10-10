@@ -13,6 +13,7 @@ local defaults = {
   tooltip =      { true,  L["Show role icons in player tooltips"] },
   hbicon =       { false, L["Show role icons in HealBot bars"] },
   chat =         { true,  L["Show role icons in chat windows"] },
+  system =       { true,  L["Show role icons in system messages"] },
   debug =        { false, L["Debug the addon"] },
   classbuttons = { true,  L["Add class summary buttons to the Raid tab"] },
   rolebuttons =  { true,  L["Add role summary buttons to the Raid tab"] },
@@ -540,6 +541,7 @@ addon.UpdateRGF = UpdateRGF
 function addon:UpdateServers(intt)
   addon.servers = addon.servers or {}
   addon.levelcache = addon.levelcache or {}
+  addon.rolecache = addon.rolecache or {}
   for _,info in pairs(addon.servers) do
     info.num = 0
     info.maxlevel = 0
@@ -567,7 +569,11 @@ function addon:UpdateServers(intt)
       else
         level = addon.levelcache[fullname] or 0
       end
-
+      local shortname = fullname:gsub("-"..GetRealmName(),"")
+      local role = UnitGroupRolesAssigned(shortname)
+      if role then
+        addon.rolecache[shortname] = role
+      end
       local r = addon.servers[realm] or { num=0, maxlevel=0, name=realm }
       addon.servers[realm] = r
       r.num = r.num + 1 
@@ -650,6 +656,63 @@ function addon:UpdateServers(intt)
      GameTooltip:IsShown() and GameTooltip:GetOwner() == TTframe then -- dynamically update tooltip
      TTfunc(TTframe)
   end
+end
+
+local system_msgs = {
+  ERR_INSTANCE_GROUP_ADDED_S,           -- "%s has joined the instance group."
+  ERR_INSTANCE_GROUP_REMOVED_S, 	-- "%s has left the instance group."
+  ERR_RAID_MEMBER_ADDED_S,              -- "%s has joined the raid group."
+  ERR_RAID_MEMBER_REMOVED_S, 		-- "%s has left the raid group."
+  ERR_BG_PLAYER_LEFT_S, 		-- "%s has left the battle"
+  RAID_MEMBERS_AFK, 			-- "The following players are Away: %s"
+  RAID_MEMBER_NOT_READY, 		-- "%s is not ready"
+  ERR_RAID_LEADER_READY_CHECK_START_S, 	-- "%s has initiated a ready check."
+  ERR_PLAYER_DIED_S,			-- "%s has died."
+  ERR_NEW_GUIDE_S,			-- "%s is now the Dungeon Guide.";
+  ERR_NEW_LEADER_S,			-- "%s is now the group leader.";
+  ERR_NEW_LOOT_MASTER_S,		-- "%s is now the loot master.";
+  LFG_LEADER_CHANGED_WARNING,		-- "%s is now the leader of your group!";
+  JOINED_PARTY,				-- "%s joins the party."
+  LEFT_PARTY, 				-- "%s leaves the party."
+}
+local function patconvert(str)
+  return "^"..str:gsub("%%s","(.-)").."$"
+end
+for i, str in ipairs(system_msgs) do
+  system_msgs[i] = patconvert(str)
+end
+
+local function SystemMessageFilter(self, event, message, ...)
+  if not settings.system then return false end
+  if oRA3 and not addon.oRA3hooked then -- oRA3 sends a fake system message when not promoted, catch that too
+     local oral = LibStub("AceLocale-3.0", true)
+     oral = oral and oral:GetLocale("oRA3", true)
+     oral = oral and oral["The following players are not ready: %s"]
+     if oral then
+       table.insert(system_msgs, patconvert(oral))
+       addon.oRA3hooked = true
+     end
+  end
+  for _, pat in ipairs(system_msgs) do
+    local names = message:match(pat)
+    if names then 
+      for toon in string.gmatch(names, "[^,%s]+") do
+        local role = UnitGroupRolesAssigned(toon)
+        if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
+	local cname = toon
+	if settings.trimserver and cname:match("-[^-]+$") then
+	   cname = cname:gsub("(-[^-][^-][^-])[^-]*$","%1")
+	end
+	cname = "[\124Hplayer:"..toon..":0\124h"..cname.."\124h]"
+        if (role and role ~= "NONE") then
+	  cname = getRoleTex(role,0)..cname
+        end
+        message = message:gsub(toon:gsub("-","%%-"), cname)
+      end
+      return false, message, ...
+    end
+  end
+  return false, message, ...
 end
 
 local function ChatFilter(self, event, message, sender, ...)
@@ -775,6 +838,10 @@ local function RegisterHooks()
      GetColoredName_orig = _G.GetColoredName
      _G.GetColoredName = GetColoredName_hook
      reg["gcn"] = true
+  end
+  if settings.system and not reg["syschats"] then
+     ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", SystemMessageFilter)
+     reg["syschats"] = true
   end
   local lastrcb = _G["RaidClassButton"..MAX_CLASSES]
   if settings.classbuttons and lastrcb then
