@@ -678,8 +678,9 @@ local system_msgs = {
 local function patconvert(str)
   return "^"..str:gsub("%%s","(.-)").."$"
 end
+local system_scan = {}
 for i, str in ipairs(system_msgs) do
-  system_msgs[i] = patconvert(str)
+  system_scan[i] = patconvert(str)
 end
 
 local function SystemMessageFilter(self, event, message, ...)
@@ -689,13 +690,16 @@ local function SystemMessageFilter(self, event, message, ...)
      oral = oral and oral:GetLocale("oRA3", true)
      oral = oral and oral["The following players are not ready: %s"]
      if oral then
-       table.insert(system_msgs, patconvert(oral))
+       table.insert(system_msgs, oral)
+       table.insert(system_scan, patconvert(oral))
        addon.oRA3hooked = true
      end
   end
-  for _, pat in ipairs(system_msgs) do
+  for idx, pat in ipairs(system_scan) do
     local names = message:match(pat)
-    if names then 
+    local msg = system_msgs[idx]
+    if names and msg then 
+      local newnames = ""
       for toon in string.gmatch(names, "[^,%s]+") do
         local role = UnitGroupRolesAssigned(toon)
         if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
@@ -707,9 +711,9 @@ local function SystemMessageFilter(self, event, message, ...)
         if (role and role ~= "NONE") then
 	  cname = getRoleTex(role,0)..cname
         end
-        message = message:gsub(toon:gsub("-","%%-"), cname)
+	newnames = newnames..(#newnames > 0 and ", " or "")..cname
       end
-      return false, message, ...
+      return false, msg:format(newnames), ...
     end
   end
   return false, message, ...
