@@ -103,17 +103,26 @@ end
 local server_prefixes = {
   The=1, Das=1, Der=1, Die=1, La=1, Le=1, Les=1, Los=1, Las=1,
 }
-local function trimServer(name)
+local function trimServer(name, colorunit)
+  local class = colorunit and 
+                (UnitExists(colorunit) and select(2,UnitClass(colorunit))) or 
+		addon.classcache[name] or
+		select(2,UnitClass(name))
   name = name:gsub("%s","") -- remove space
-  if not settings.trimserver then return name end
   local cname, rname = name:match("^([^-]+)-([^-]+)$") -- split
-  if not (cname and rname) then return name end
-  local prefix = rname:match("^(%u[^%u]*)%u")
-  if prefix and server_prefixes[prefix] and #rname >= #prefix+3 then
-    rname = rname:gsub("^"..prefix,"")
+  if not (cname and rname) then 
+    cname = name
+    rname = nil
   end
-  rname = rname:gsub("^(...).*$","%1") -- trim
-  return cname.."-"..rname
+  if rname and settings.trimserver then
+    local prefix = rname:match("^(%u[^%u]*)%u")
+    if prefix and server_prefixes[prefix] and #rname >= #prefix+3 then
+      rname = rname:gsub("^"..prefix,"")
+    end
+    rname = rname:gsub("^(...).*$","%1") -- trim
+  end
+  local ret = cname..(rname and "-"..rname or "")
+  return classColor(ret, class, colorunit)
 end
 function addon:trimServer(...) return trimServer(...) end
 
@@ -141,10 +150,9 @@ local function toonList(role, class)
       if uname and uclass and
          ((not role)  or (role and role == urole)) and
          ((not class) or (class and class == uclass)) then
-	 local cname = trimServer(uname)
+	 local cname = trimServer(uname, unitid)
          uname = uname:gsub("%s","")
 	 table.insert(sorttemp,uname)
-	 cname = classColor(cname, uclass, unitid)
 	 if not role and urole and urole ~= "NONE" then
 	   cname = getRoleTex(urole)..cname
 	 end
@@ -556,23 +564,26 @@ function addon:UpdateServers(intt)
   addon.servers = addon.servers or {}
   addon.levelcache = addon.levelcache or {}
   addon.rolecache = addon.rolecache or {}
+  addon.classcache = addon.classcache or {}
   for _,info in pairs(addon.servers) do
     info.num = 0
     info.maxlevel = 0
   end
   local num = GetNumGroupMembers()
   for i=1,num do
-    local name, realm, level
+    local name, realm, level, class
     if IsInRaid() then
       local _
-      name, _, _, level = GetRaidRosterInfo(i)
+      name, _, _, level, _, class = GetRaidRosterInfo(i)
       realm = name and name:match("-([^-]+)$")
       if not level or level == 0 then level = UnitLevel("raid"..i) end -- empty for offline
+      if not class or class == "UNKNOWN" then class = select(2,UnitClass("raid"..i)) end -- empty for offline
     else
       local unit = "player"
       if i < num then unit = "party"..i end
       name, realm = UnitName(unit)
       level = UnitLevel(unit)
+      class = select(2,UnitClass(unit))
     end
     if name and level then
       if not realm or realm == "" then realm = GetRealmName() end
@@ -587,6 +598,9 @@ function addon:UpdateServers(intt)
       local role = UnitGroupRolesAssigned(shortname)
       if role then
         addon.rolecache[shortname] = role
+      end
+      if class and class ~= "UNKNOWN" then
+        addon.classcache[shortname] = class
       end
       local r = addon.servers[realm] or { num=0, maxlevel=0, name=realm }
       addon.servers[realm] = r
@@ -717,7 +731,7 @@ local function SystemMessageFilter(self, event, message, ...)
       for toon in string.gmatch(names, "[^,%s]+") do
         local role = UnitGroupRolesAssigned(toon)
         if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
-	local cname = trimServer(toon)
+	local cname = trimServer(toon, true)
 	cname = "[\124Hplayer:"..toon..":0\124h"..cname.."\124h]"
         if (role and role ~= "NONE") then
 	  cname = getRoleTex(role,0)..cname
