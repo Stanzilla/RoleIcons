@@ -100,6 +100,17 @@ local function classColor(name, class, unit)
    return name
 end
 
+local function trimServer(name)
+  name = name:gsub("%s","") -- remove space
+  if not settings.trimserver then return name end
+  local cname, rname = name:match("^([^-]+)-([^-]+)$") -- split
+  if not (cname and rname) then return name end
+  rname = rname:gsub("The(%u)","%1"):gsub("Die(%u)","%1") -- remove prefix
+  rname = rname:gsub("^(...).*$","%1") -- trim
+  return cname.."-"..rname
+end
+function addon:trimServer(...) return trimServer(...) end
+
 local sorttemp = {}
 local infotemp = {}
 local function toonList(role, class)
@@ -124,12 +135,9 @@ local function toonList(role, class)
       if uname and uclass and
          ((not role)  or (role and role == urole)) and
          ((not class) or (class and class == uclass)) then
+	 local cname = trimServer(uname)
          uname = uname:gsub("%s","")
 	 table.insert(sorttemp,uname)
-	 local cname = uname
-	 if settings.trimserver and cname:match("-[^-]+$") then
-	   cname = cname:gsub("(-[^-][^-][^-])[^-]*$","%1")
-	 end
 	 cname = classColor(cname, uclass, unitid)
 	 if not role and urole and urole ~= "NONE" then
 	   cname = getRoleTex(urole)..cname
@@ -703,10 +711,7 @@ local function SystemMessageFilter(self, event, message, ...)
       for toon in string.gmatch(names, "[^,%s]+") do
         local role = UnitGroupRolesAssigned(toon)
         if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
-	local cname = toon
-	if settings.trimserver and cname:match("-[^-]+$") then
-	   cname = cname:gsub("(-[^-][^-][^-])[^-]*$","%1")
-	end
+	local cname = trimServer(toon)
 	cname = "[\124Hplayer:"..toon..":0\124h"..cname.."\124h]"
         if (role and role ~= "NONE") then
 	  cname = getRoleTex(role,0)..cname
