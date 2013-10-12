@@ -100,12 +100,18 @@ local function classColor(name, class, unit)
    return name
 end
 
+local server_prefixes = {
+  The=1, Das=1, Der=1, Die=1, La=1, Le=1, Les=1, Los=1, Las=1,
+}
 local function trimServer(name)
   name = name:gsub("%s","") -- remove space
   if not settings.trimserver then return name end
   local cname, rname = name:match("^([^-]+)-([^-]+)$") -- split
   if not (cname and rname) then return name end
-  rname = rname:gsub("The(%u)","%1"):gsub("Die(%u)","%1") -- remove prefix
+  local prefix = rname:match("^(%u[^%u]*)%u")
+  if prefix and server_prefixes[prefix] and #rname >= #prefix+3 then
+    rname = rname:gsub("^"..prefix,"")
+  end
   rname = rname:gsub("^(...).*$","%1") -- trim
   return cname.."-"..rname
 end
