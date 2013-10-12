@@ -722,6 +722,8 @@ local function SystemMessageFilter(self, event, message, ...)
        table.insert(system_scan, patconvert(oral))
        addon.oRA3hooked = true
      end
+     local rc = oRA3:GetModule("ReadyCheck",true)
+     if rc then rc.stripservers = false end -- tell oRA3 not to strip realms from fake server messages
   end
   for idx, pat in ipairs(system_scan) do
     local names = message:match(pat)
