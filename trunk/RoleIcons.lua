@@ -22,6 +22,7 @@ local defaults = {
   autorole =     { true,  L["Automatically set role and respond to role checks based on your spec"] },
   target =       { true,  L["Show role icons on the target frame (default Blizzard frames)"] },
   focus =        { true,  L["Show role icons on the focus frame (default Blizzard frames)"] },
+  popup =        { true,  L["Show role icons in unit popup menus"] },
 }
 local settings
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE] 
@@ -772,6 +773,36 @@ local function PratFilter()
   end
 end
 
+local function UnitPopup_hook(menu, which, unit, name, userData)
+  if not settings.popup then return end
+  debug("UnitPopup_hook: "..tostring(which))
+  if unit and not UnitIsPlayer(unit) then return end
+  if which and which:match("^BN_") then return end
+  if which == "FOCUS" and unit then name = nil end -- workaround a Blizz hack
+  local line = DropDownList1Button1
+  local text = line and line.GetText and line:GetText()
+  if not text or #text == 0 then return end
+  if not name and unit and UnitExists(unit) then name = GetUnitName(unit,true) end
+  if not name or not name:match("^"..text) then return end
+  local role = UnitGroupRolesAssigned(unit or name)
+  if not role or role == "NONE" then role = addon.rolecache[name] end 
+  local class = (unit and UnitExists(unit) and select(2,UnitClass(unit))) or 
+		addon.classcache[name] or select(2,UnitClass(name))
+  debug("name="..name.." unit="..tostring(unit).." class="..tostring(class).." role="..tostring(role))
+  local cname = classColor(name, class, unit)
+  if (role and role ~= "NONE") then
+    cname = getRoleTex(role,0)..cname
+  end
+  line:SetText(cname)
+  -- might need to stretch the menu width for long names
+  local ntext = DropDownList1Button1NormalText
+  local minwidth = (ntext:GetStringWidth() or 0) 
+  local width = DropDownList1 and DropDownList1.maxWidth
+  if width and width < minwidth then
+    DropDownList1.maxWidth = minwidth
+  end
+end
+
 local GetColoredName_orig
 local function GetColoredName_hook(event, arg1, arg2, ...)
   local ret = GetColoredName_orig(event, arg1, arg2, ...)
@@ -873,6 +904,10 @@ local function RegisterHooks()
   if settings.system and not reg["syschats"] then
      ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", SystemMessageFilter)
      reg["syschats"] = true
+  end
+  if settings.popup and UnitPopup_ShowMenu and not reg["popup"] then
+     hooksecurefunc("UnitPopup_ShowMenu", UnitPopup_hook)
+     reg["popup"] = true
   end
   local lastrcb = _G["RaidClassButton"..MAX_CLASSES]
   if settings.classbuttons and lastrcb then
