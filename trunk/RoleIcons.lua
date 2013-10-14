@@ -732,6 +732,7 @@ local function SystemMessageFilter(self, event, message, ...)
     if names and msg then 
       local newnames = ""
       for toon in string.gmatch(names, "[^,%s]+") do
+        toon = GetUnitName(toon, true) -- death messages are not fully-qualified
         local role = UnitGroupRolesAssigned(toon)
         if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
 	local cname = trimServer(toon, true)
