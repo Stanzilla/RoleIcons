@@ -703,21 +703,28 @@ local system_msgs = {
   LFG_LEADER_CHANGED_WARNING,		-- "%s is now the leader of your group!";
   JOINED_PARTY,				-- "%s joins the party."
   LEFT_PARTY, 				-- "%s leaves the party."
+  ERR_PARTY_LFG_BOOT_VOTE_FAILED,	-- "The vote to kick %s has failed.";
+  ERR_PARTY_LFG_BOOT_VOTE_SUCCEEDED,	-- "The vote to kick %s has passed.";
 }
 local function patconvert(str)
-  return "^"..str:gsub("%%s","(.-)").."$"
+  return "^"..str:gsub("%%%d?%$?s","(.-)").."$" -- replace %s and %4$s with a capture
 end
 local system_scan = {}
 for i, str in ipairs(system_msgs) do
   system_scan[i] = patconvert(str)
 end
-local icon_scan = patconvert(TARGET_ICON_SET:gsub("[%[%]%-]",".")):gsub("%%d","(%%d+)")
-local icon_msg = TARGET_ICON_SET:gsub("\124Hplayer.+\124h","%%s")
+-- messages that need special handling
+table.insert(system_scan, (patconvert(ERR_PARTY_LFG_BOOT_VOTE_REGISTERED):gsub("%%%d?%$?d.+$","")))
+      -- "Your request to kick %s has been successfully received. %d |4more request is:more requests are; needed to initiate a vote.";
+local icon_scan = patconvert(TARGET_ICON_SET:gsub("[%[%]%-]",".")):gsub("%%%d?%$?d","(%%d+)")
+local icon_msg = TARGET_ICON_SET:gsub("\124Hplayer.+\124h","%%s"):gsub("%%%d?%$?[ds]","%%s")
       -- "|Hplayer:%s|h[%s]|h sets |TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t on %s."
 
 function addon:formatToon(toon)
-  if not toon or not UnitExists(toon) or not (UnitInRaid(toon) or UnitInParty(toon)) then return toon end
-  toon = GetUnitName(toon, true) -- ensure name is fully-qualified
+  if not toon then return end
+  toon = GetUnitName(toon, true) or toon -- ensure name is fully-qualified
+  if not addon.classcache[toon] and 
+     not (UnitExists(toon) and (UnitInRaid(toon) or UnitInParty(toon))) then return toon end
   local role = UnitGroupRolesAssigned(toon)
   if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
   local cname = trimServer(toon, true)
@@ -754,18 +761,23 @@ local function SystemMessageFilter(self, event, message, ...)
     local _, src, id, dst = message:match(icon_scan)
     if not (src and id and dst) then return false end
     src = addon:formatToon(src)
+    id = addon:formatToon(id) -- some locales reverse the fields
     dst = addon:formatToon(dst)
     return false, icon_msg:format(src, id, dst), ...
   end
   for idx, pat in ipairs(system_scan) do
     local names = message:match(pat)
     local msg = system_msgs[idx]
-    if names and msg then 
+    if names then 
       local newnames = ""
       for toon in string.gmatch(names, "[^,%s]+") do
 	newnames = newnames..(#newnames > 0 and ", " or "")..addon:formatToon(toon)
       end
-      return false, msg:format(newnames), ...
+      if msg then -- re-print
+        return false, msg:format(newnames), ...
+      else -- substitute
+        return false, message:gsub(names:gsub("%-","."),newnames), ...
+      end
     end
   end
   return false, message, ...
