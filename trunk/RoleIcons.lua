@@ -711,6 +711,21 @@ local system_scan = {}
 for i, str in ipairs(system_msgs) do
   system_scan[i] = patconvert(str)
 end
+local icon_scan = patconvert(TARGET_ICON_SET:gsub("[%[%]%-]",".")):gsub("%%d","(%%d+)")
+local icon_msg = TARGET_ICON_SET:gsub("\124Hplayer.+\124h","%%s")
+      -- "|Hplayer:%s|h[%s]|h sets |TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t on %s."
+
+function addon:formatToon(toon)
+  toon = GetUnitName(toon, true) -- ensure name is fully-qualified
+  local role = UnitGroupRolesAssigned(toon)
+  if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
+  local cname = trimServer(toon, true)
+  cname = "[\124Hplayer:"..toon..":0\124h"..cname.."\124h]"
+  if (role and role ~= "NONE") then
+     cname = getRoleTex(role,0)..cname
+  end
+  return cname
+end
 
 local function SystemMessageFilter(self, event, message, ...)
   if not settings.system then return false end
@@ -726,21 +741,22 @@ local function SystemMessageFilter(self, event, message, ...)
      local rc = oRA3:GetModule("ReadyCheck",true)
      if rc then rc.stripservers = false end -- tell oRA3 not to strip realms from fake server messages
   end
+  if event == "CHAT_MSG_TARGETICONS" then -- special handling for icon message
+    local _, src, id, dst = message:match(icon_scan)
+    if not (src and id and dst) then return false end
+    src = addon:formatToon(src)
+    if UnitExists(dst) and (UnitInRaid(dst) or UnitInParty(dst)) then
+      dst = addon:formatToon(dst)
+    end
+    return false, icon_msg:format(src, id, dst), ...
+  end
   for idx, pat in ipairs(system_scan) do
     local names = message:match(pat)
     local msg = system_msgs[idx]
     if names and msg then 
       local newnames = ""
       for toon in string.gmatch(names, "[^,%s]+") do
-        toon = GetUnitName(toon, true) -- death messages are not fully-qualified
-        local role = UnitGroupRolesAssigned(toon)
-        if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
-	local cname = trimServer(toon, true)
-	cname = "[\124Hplayer:"..toon..":0\124h"..cname.."\124h]"
-        if (role and role ~= "NONE") then
-	  cname = getRoleTex(role,0)..cname
-        end
-	newnames = newnames..(#newnames > 0 and ", " or "")..cname
+	newnames = newnames..(#newnames > 0 and ", " or "")..addon:formatToon(toon)
       end
       return false, msg:format(newnames), ...
     end
@@ -904,6 +920,7 @@ local function RegisterHooks()
   end
   if settings.system and not reg["syschats"] then
      ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", SystemMessageFilter)
+     ChatFrame_AddMessageEventFilter("CHAT_MSG_TARGETICONS", SystemMessageFilter)
      reg["syschats"] = true
   end
   if settings.popup and UnitPopup_ShowMenu and not reg["popup"] then
