@@ -716,6 +716,7 @@ local icon_msg = TARGET_ICON_SET:gsub("\124Hplayer.+\124h","%%s")
       -- "|Hplayer:%s|h[%s]|h sets |TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t on %s."
 
 function addon:formatToon(toon)
+  if not toon or not UnitExists(toon) or not (UnitInRaid(toon) or UnitInParty(toon)) then return toon end
   toon = GetUnitName(toon, true) -- ensure name is fully-qualified
   local role = UnitGroupRolesAssigned(toon)
   if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
@@ -725,6 +726,14 @@ function addon:formatToon(toon)
      cname = getRoleTex(role,0)..cname
   end
   return cname
+end
+
+local function RoleChangedFrame_OnEvent_hook(self, event, changed, from, oldRole, newRole, ...)
+  if settings.system then 
+    changed = addon:formatToon(changed)
+    from = addon:formatToon(from)
+  end
+  return RoleChangedFrame_OnEvent(self, event, changed, from, oldRole, newRole, ...)
 end
 
 local function SystemMessageFilter(self, event, message, ...)
@@ -745,9 +754,7 @@ local function SystemMessageFilter(self, event, message, ...)
     local _, src, id, dst = message:match(icon_scan)
     if not (src and id and dst) then return false end
     src = addon:formatToon(src)
-    if UnitExists(dst) and (UnitInRaid(dst) or UnitInParty(dst)) then
-      dst = addon:formatToon(dst)
-    end
+    dst = addon:formatToon(dst)
     return false, icon_msg:format(src, id, dst), ...
   end
   for idx, pat in ipairs(system_scan) do
@@ -922,6 +929,10 @@ local function RegisterHooks()
      ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", SystemMessageFilter)
      ChatFrame_AddMessageEventFilter("CHAT_MSG_TARGETICONS", SystemMessageFilter)
      reg["syschats"] = true
+  end
+  if settings.system and RoleChangedFrame and not reg["rolechange"] then
+     RoleChangedFrame:SetScript("OnEvent", RoleChangedFrame_OnEvent_hook)
+     reg["rolechange"] = true
   end
   if settings.popup and UnitPopup_ShowMenu and not reg["popup"] then
      hooksecurefunc("UnitPopup_ShowMenu", UnitPopup_hook)
