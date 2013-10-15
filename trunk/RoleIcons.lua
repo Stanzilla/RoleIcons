@@ -715,6 +715,7 @@ for i, str in ipairs(system_msgs) do
 end
 -- messages that need special handling
 table.insert(system_scan, (patconvert(ERR_PARTY_LFG_BOOT_VOTE_REGISTERED):gsub("%%%d?%$?d.+$","")))
+table.insert(system_msgs, false)
       -- "Your request to kick %s has been successfully received. %d |4more request is:more requests are; needed to initiate a vote.";
 local icon_scan = patconvert(TARGET_ICON_SET:gsub("[%[%]%-]",".")):gsub("%%%d?%$?d","(%%d+)")
 local icon_msg = TARGET_ICON_SET:gsub("\124Hplayer.+\124h","%%s"):gsub("%%%d?%$?[ds]","%%s")
