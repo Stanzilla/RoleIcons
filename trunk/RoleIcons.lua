@@ -700,7 +700,7 @@ local system_msgs = {
   ERR_NEW_GUIDE_S,			-- "%s is now the Dungeon Guide.";
   ERR_NEW_LEADER_S,			-- "%s is now the group leader.";
   ERR_NEW_LOOT_MASTER_S,		-- "%s is now the loot master.";
-  LFG_LEADER_CHANGED_WARNING,		-- "%s is now the leader of your group!";
+  LFG_LEADER_CHANGED_WARNING,		-- "%s is now the leader of your group!"; (currently broken via LFG_DisplayGroupLeaderWarning)
   JOINED_PARTY,				-- "%s joins the party."
   LEFT_PARTY, 				-- "%s leaves the party."
   ERR_PARTY_LFG_BOOT_VOTE_FAILED,	-- "The vote to kick %s has failed.";
