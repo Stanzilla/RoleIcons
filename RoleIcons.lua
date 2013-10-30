@@ -876,7 +876,21 @@ local reg = {}
 local function RegisterHooks()
   if not settings then return end
   if not reg["taintfix"] then -- ticket 12: fix 5.4.1 taint bug
-    setfenv(RaidFrame_OnShow, setmetatable({ UpdateMicroButtons = function() end }, { __index = _G }))
+    -- this fix does not work because it taints all of RaidFrame_OnShow, 
+    -- but that execution path needs to remain secure so it can show secure buttons 
+    -- in combat before calling the problematic UpdateMicroButtons()
+    -- this hackaround causes errors when toggling the raid frame in combat
+    --setfenv(RaidFrame_OnShow, setmetatable({ UpdateMicroButtons = function() end }, { __index = _G }))
+
+    -- this hackaround is a big disgusting overkill hack, 
+    -- but at least hides the OnShow errors until Blizzard fixes their buggy shit
+    -- unfortunately it also taints and breaks the talent frame :-(
+    --C_StorePublic.IsDisabledByParentalControls = function() return false end
+    -- and this one removes the OnHide which does nothing but a useless UpdateMicroButtons(),
+    -- which taints execution because of the above fix and then errors while hiding secure frames
+    --RaidFrame:SetScript("OnHide", nil)
+    --RaidParentFrame:SetScript("OnHide", nil)
+
     reg["taintfix"] = true
   end
   if settings.raid and RaidGroupFrame_Update and not reg["rgb"] then
