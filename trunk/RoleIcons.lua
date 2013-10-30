@@ -875,6 +875,10 @@ end
 local reg = {}
 local function RegisterHooks()
   if not settings then return end
+  if not reg["taintfix"] then -- ticket 12: fix 5.4.1 taint bug
+    setfenv(RaidFrame_OnShow, setmetatable({ UpdateMicroButtons = function() end }, { __index = _G }))
+    reg["taintfix"] = true
+  end
   if settings.raid and RaidGroupFrame_Update and not reg["rgb"] then
     debug("Registering RaidGroupFrame_Update")
     hooksecurefunc("RaidGroupFrame_Update",UpdateRGF)
