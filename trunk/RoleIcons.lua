@@ -537,17 +537,29 @@ local function UpdateRGF()
     end
   end
   end
-  for i=1,20 do
-    local btn = _G["RaidClassButton"..i]
-    if btn then 
-      if settings.classbuttons and UnitInRaid("player") and i <= MAX_CLASSES and not RaidInfoFrame:IsShown() then
+  if addon.classbuttons then
+  for i,btn in ipairs(addon.classbuttons) do
+    local class = btn.class
+    local count = classcnt[class]
+    if settings.classbuttons and UnitInRaid("player") and i <= MAX_CLASSES and not RaidInfoFrame:IsShown() then
         btn:Show()
-        local fs = _G["RaidClassButton"..i.."Count"]
-	if fs then fs:SetTextHeight(12) end -- got too small in 5.x for some reason
-      else
+        local icon = _G[btn:GetName().."IconTexture"]
+        local fs = _G[btn:GetName().."Count"]
+ 	if count and count > 0 then
+	  fs:SetTextHeight(12) -- got too small in 5.x for some reason
+	  fs:SetText(count)
+	  fs:Show()
+	  icon:SetAlpha(1)
+	  SetItemButtonDesaturated(btn, nil)
+	else
+	  fs:Hide()
+	  icon:SetAlpha(0.5)
+	  SetItemButtonDesaturated(btn, true)
+	end
+    else
         btn:Hide()
-      end
     end
+  end
   end
   if not addon.headerFrame then
     addon.headerFrame = CreateFrame("Button", addonName.."HeaderButton", RaidFrame)
@@ -969,35 +981,51 @@ local function RegisterHooks()
      hooksecurefunc("UnitPopup_ShowMenu", UnitPopup_hook)
      reg["popup"] = true
   end
-  local lastrcb = _G["RaidClassButton"..MAX_CLASSES]
-  if settings.classbuttons and lastrcb then
-    if not addon.rcbsetup then
-      addon.rcbsetup = true
-      -- since 5.x, RAID_CLASS_BUTTONS is initialized incorrectly, clobbering a class - so fix it
-      local extra = MAX_CLASSES + 1
-      for _, name in ipairs({"PETS","MAINTANK","MAINASSIST"}) do
-        RAID_CLASS_BUTTONS[name].button = extra
-	extra = extra + 1
+  if settings.classbuttons and not addon.classbuttons 
+      and RaidClassButton1 then -- for RaidClassButtonTemplate
+      addon.classbuttons = {}
+      local function rcb_onenter(self) 
+	local class = self.class
+	local lclass = class and LC[class]
+	GameTooltip:SetOwner(self)
+        TTframe = self
+        TTfunc = rcb_onenter
+	if class and lclass then
+	  local list, cnt = toonList(nil, class)
+	  GameTooltip:ClearLines()
+	  GameTooltip:SetText(classColor(lclass,class).." ("..cnt..")")
+	  GameTooltip:AddLine(list,1,1,1,true)
+	  GameTooltip:Show()
+	end
+	GameTooltip:ClearAllPoints()
+	GameTooltip:SetPoint("BOTTOMLEFT",self,"TOPRIGHT")
       end
       for i = 1,MAX_CLASSES do -- squeeze layout to make everything fit
-        local rcb = _G["RaidClassButton"..i]
-	rcb:ClearAllPoints()
+        local rcb = CreateFrame("Button", addonName.."RaidClassButton"..i, RaidFrame, "RaidClassButtonTemplate")
+	addon.classbuttons[i] = rcb
 	rcb:SetSize(20,20)
+	rcb:SetScript("OnEnter",rcb_onenter)
 	local bkg = rcb:GetRegions() -- background graphic is off-center and needs to be slid up
 	bkg:ClearAllPoints()
 	--bkg:SetPoint("TOPLEFT",0,7)
 	bkg:SetPoint("TOPLEFT",-2,7)
-	rcb:SetPoint("BOTTOM",_G["RaidClassButton"..(i+1)],"TOP",0,6) -- spacing
 	-- more init fixups
 	rcb.class = CLASS_SORT_ORDER[i]
-	local icon = _G["RaidClassButton"..i.."IconTexture"] 
+	local icon = _G[rcb:GetName().."IconTexture"] 
 	icon:SetAllPoints()
 	icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes");
         icon:SetTexCoord(unpack(CLASS_ICON_TCOORDS[rcb.class]))
       end
-    end
-    lastrcb:ClearAllPoints()
-    lastrcb:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",1,10)
+      local lastrcb = addon.classbuttons[MAX_CLASSES]
+      lastrcb:ClearAllPoints()
+      lastrcb:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",1,10)
+      for i = MAX_CLASSES-1,1,-1 do -- squeeze layout to make everything fit
+        local rcb = addon.classbuttons[i]
+        rcb:ClearAllPoints()
+        rcb:SetPoint("BOTTOM",lastrcb,"TOP",0,6) -- spacing
+	rcb:Show()
+        lastrcb = rcb
+      end
   end
   if settings.rolebuttons and not addon.rolebuttons 
      and RaidClassButton1 then -- for RaidClassButtonTemplate
@@ -1042,26 +1070,6 @@ local function RegisterHooks()
       last = btn
     end
     addon.rolebuttons["TANK"]:SetPoint("TOPLEFT",FriendsFrameCloseButton,"BOTTOMRIGHT",-1,8)
-  end
-  if RaidClassButton_OnEnter and not reg["rcboe"] then
-    local function rcb_onenter(self) 
-	local class = self.fileName
-	local lclass = class and LC[class]
-	GameTooltip:SetOwner(self)
-        TTframe = self
-        TTfunc = rcb_onenter
-	if class and lclass then
-	  local list, cnt = toonList(nil, class)
-	  GameTooltip:ClearLines()
-	  GameTooltip:SetText(classColor(lclass,class).." ("..cnt..")")
-	  GameTooltip:AddLine(list,1,1,1,true)
-	  GameTooltip:Show()
-	end
-	GameTooltip:ClearAllPoints()
-	GameTooltip:SetPoint("BOTTOMLEFT",self,"TOPRIGHT")
-    end
-    hooksecurefunc("RaidClassButton_OnEnter", rcb_onenter)
-    reg["rcboe"] = true
   end
   if RolePollPopup and not reg["rpp"] then
      addon.rppevent = RolePollPopup:GetScript("OnEvent")
