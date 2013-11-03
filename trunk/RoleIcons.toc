@@ -1,6 +1,8 @@
 ## Interface: 50400
 ## Title: RoleIcons 
 ## Notes: Adds party/raid role icons in useful places
+## Notes-zhTW: 在有用的地方加上隊伍/團隊角色圖示。
+## Notes-zhCN: 在有用的地方添加队伍/团队角色图示。
 ## Author: oscarucb
 ## Version: @project-version@
 ## X-Build: @project-revision@
@@ -12,3 +14,4 @@
 
 locale.lua
 RoleIcons.lua
+
