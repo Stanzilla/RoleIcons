@@ -68,6 +68,7 @@ local function getRoleTex(role,size)
   end
   return str
 end
+-- could also use GetTexCoordsForRole/GetTexCoordsForRoleSmallCircle
 local function getRoleTexCoord(role)
   local str = role_tex[role]
   if not str or #str == 0 then return nil end
@@ -733,7 +734,7 @@ local icon_scan = patconvert(TARGET_ICON_SET:gsub("[%[%]%-]",".")):gsub("%%%d?%$
 local icon_msg = TARGET_ICON_SET:gsub("\124Hplayer.+\124h","%%s"):gsub("%%%d?%$?[ds]","%%s")
       -- "|Hplayer:%s|h[%s]|h sets |TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t on %s."
 
-function addon:formatToon(toon)
+function addon:formatToon(toon, nolink)
   if not toon then return end
   toon = GetUnitName(toon, true) or toon -- ensure name is fully-qualified
   if not addon.classcache[toon] and 
@@ -741,7 +742,9 @@ function addon:formatToon(toon)
   local role = UnitGroupRolesAssigned(toon)
   if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
   local cname = trimServer(toon, true)
-  cname = "[\124Hplayer:"..toon..":0\124h"..cname.."\124h]"
+  if not nolink then
+    cname = "[\124Hplayer:"..toon..":0\124h"..cname.."\124h]"
+  end
   if (role and role ~= "NONE") then
      cname = getRoleTex(role,0)..cname
   end
@@ -754,6 +757,15 @@ local function RoleChangedFrame_OnEvent_hook(self, event, changed, from, oldRole
     from = addon:formatToon(from)
   end
   return RoleChangedFrame_OnEvent(self, event, changed, from, oldRole, newRole, ...)
+end
+
+local function setMemberStatus_hook(...)
+  local f = addon.setMemberStatus_orig(...)
+  local name = select(4,...)
+  if name and f and f.NameText and f.NameText.SetText then
+    local cname = addon:formatToon(name, true)
+    if cname then f.NameText:SetText(cname) end
+  end
 end
 
 local function SystemMessageFilter(self, event, message, ...)
@@ -769,6 +781,10 @@ local function SystemMessageFilter(self, event, message, ...)
      end
      local rc = oRA3:GetModule("ReadyCheck",true)
      if rc then rc.stripservers = false end -- tell oRA3 not to strip realms from fake server messages
+     if rc and rc.setMemberStatus then
+       addon.setMemberStatus_orig = rc.setMemberStatus
+       rc.setMemberStatus = setMemberStatus_hook
+     end
   end
   if event == "CHAT_MSG_TARGETICONS" then -- special handling for icon message
     local _, src, id, dst = message:match(icon_scan)
