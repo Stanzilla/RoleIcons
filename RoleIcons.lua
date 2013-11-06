@@ -759,15 +759,6 @@ local function RoleChangedFrame_OnEvent_hook(self, event, changed, from, oldRole
   return RoleChangedFrame_OnEvent(self, event, changed, from, oldRole, newRole, ...)
 end
 
-local function setMemberStatus_hook(...)
-  local f = addon.setMemberStatus_orig(...)
-  local name = select(4,...)
-  if name and f and f.NameText and f.NameText.SetText then
-    local cname = addon:formatToon(name, true)
-    if cname then f.NameText:SetText(cname) end
-  end
-end
-
 local function SystemMessageFilter(self, event, message, ...)
   if not settings.system then return false end
   if oRA3 and not addon.oRA3hooked then -- oRA3 sends a fake system message when not promoted, catch that too
@@ -781,10 +772,6 @@ local function SystemMessageFilter(self, event, message, ...)
      end
      local rc = oRA3:GetModule("ReadyCheck",true)
      if rc then rc.stripservers = false end -- tell oRA3 not to strip realms from fake server messages
-     if rc and rc.setMemberStatus then
-       addon.setMemberStatus_orig = rc.setMemberStatus
-       rc.setMemberStatus = setMemberStatus_hook
-     end
   end
   if event == "CHAT_MSG_TARGETICONS" then -- special handling for icon message
     local _, src, id, dst = message:match(icon_scan)
