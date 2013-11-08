@@ -23,6 +23,7 @@ local defaults = {
   target =       { true,  L["Show role icons on the target frame (default Blizzard frames)"] },
   focus =        { true,  L["Show role icons on the focus frame (default Blizzard frames)"] },
   popup =        { true,  L["Show role icons in unit popup menus"] },
+  map =          { true,  L["Show role icons in map tooltips"] },
 }
 local settings
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE] 
@@ -855,6 +856,59 @@ local function UnitPopup_hook(menu, which, unit, name, userData)
   end
 end
 
+local function WorldMapUnit_OnEnter_hook()
+  if not WorldMapTooltip:IsShown() or not settings.map then return end
+  local text = WorldMapTooltipTextLeft1 and WorldMapTooltipTextLeft1:GetText()
+  if not text or #text == 0 then return end
+  if not addon.mapbuttons then
+    addon.mapbuttons = { WorldMapPlayerUpper }
+    for i=1, MAX_PARTY_MEMBERS do
+      table.insert(addon.mapbuttons, _G["WorldMapParty"..i])
+    end
+    for i=1, MAX_RAID_MEMBERS do
+      table.insert(addon.mapbuttons, _G["WorldMapRaid"..i])
+    end
+  end
+  text = "\n"..text.."\n"
+  for _, button in ipairs(addon.mapbuttons) do
+    if button:IsVisible() and button:IsMouseOver() and button.unit then
+      local name = button.name or UnitName(button.unit)
+      local pname = format(PLAYER_IS_PVP_AFK, name)
+      local fname = GetUnitName(button.unit, true)
+      local toon = addon:formatToon(fname, true)
+      text = text:gsub("\n"..pname.."\n", "\n"..toon.."\n")
+      text = text:gsub("\n"..name.."\n", "\n"..toon.."\n")
+    end
+  end
+  text = strtrim(text)
+  WorldMapTooltip:SetText(text)
+  WorldMapTooltip:Show()
+end
+
+function GameTooltip_Minimap_hook()
+  if not settings.map or 
+     not GameTooltip:IsShown() or 
+     GameTooltip:GetOwner() ~= Minimap or 
+     GameTooltip:NumLines() ~= 1 then return end
+  local otext = GameTooltipTextLeft1 and GameTooltipTextLeft1:GetText()
+  if not otext or #otext == 0 then return end
+  local text = "\n"..otext.."\n"
+  text = text:gsub("(\124TInterface\\Minimap[^\124]+\124t)","%1\n\n") -- ignore up/down arrow textures
+  for name in string.gmatch(text,"[^\n]+") do
+    if not name:find("\124") then
+      --debug("GameTooltip_Minimap_hook:"..name)
+      local toon = addon:formatToon(strtrim(name), true)
+      text = text:gsub("\n"..name.."\n", "\n"..toon.."\n")
+    end
+  end
+  text = strtrim(text)
+  text = text:gsub("\n\n","")
+  if text ~= otext then
+    GameTooltip:SetText(text)
+    GameTooltip:Show()
+  end
+end
+
 local GetColoredName_orig
 local function GetColoredName_hook(event, arg1, arg2, ...)
   local ret = GetColoredName_orig(event, arg1, arg2, ...)
@@ -965,6 +1019,15 @@ local function RegisterHooks()
   if settings.popup and UnitPopup_ShowMenu and not reg["popup"] then
      hooksecurefunc("UnitPopup_ShowMenu", UnitPopup_hook)
      reg["popup"] = true
+  end
+  if settings.map and WorldMapUnit_OnEnter and not reg["map"] then
+     hooksecurefunc("WorldMapUnit_OnEnter", WorldMapUnit_OnEnter_hook)
+
+     -- minimap tooltips are set and shown from C code and cannot be directly hooked
+     -- intead we hook the events they trigger
+     GameTooltip:HookScript("OnShow", GameTooltip_Minimap_hook)
+     GameTooltip:HookScript("OnSizeChanged", GameTooltip_Minimap_hook)
+     reg["map"] = true
   end
   if settings.classbuttons and not addon.classbuttons 
       and RaidClassButton1 then -- for RaidClassButtonTemplate
