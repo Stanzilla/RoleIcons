@@ -55,6 +55,7 @@ local role_tex = {
    HEALER  = role_t.."0:0:64:64:20:39:1:20\124t",
    TANK    = role_t.."0:0:64:64:0:19:22:41\124t",
    LEADER  = role_t.."0:0:64:64:0:19:1:20\124t",
+   SPACE   = role_t.."0:0:64:64:0:0:0:0\124t",
    NONE    = ""
 }
 local function getRoleTex(role,size)
@@ -735,7 +736,7 @@ local icon_scan = patconvert(TARGET_ICON_SET:gsub("[%[%]%-]",".")):gsub("%%%d?%$
 local icon_msg = TARGET_ICON_SET:gsub("\124Hplayer.+\124h","%%s"):gsub("%%%d?%$?[ds]","%%s")
       -- "|Hplayer:%s|h[%s]|h sets |TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t on %s."
 
-function addon:formatToon(toon, nolink)
+function addon:formatToon(toon, nolink, spacenone)
   if not toon then return end
   toon = GetUnitName(toon, true) or toon -- ensure name is fully-qualified
   if not addon.classcache[toon] and 
@@ -748,6 +749,8 @@ function addon:formatToon(toon, nolink)
   end
   if (role and role ~= "NONE") then
      cname = getRoleTex(role,0)..cname
+  elseif spacenone then
+     cname = getRoleTex("SPACE",0)..cname
   end
   return cname
 end
@@ -875,7 +878,7 @@ local function WorldMapUnit_OnEnter_hook()
       local name = button.name or UnitName(button.unit)
       local pname = format(PLAYER_IS_PVP_AFK, name)
       local fname = GetUnitName(button.unit, true)
-      local toon = addon:formatToon(fname, true)
+      local toon = addon:formatToon(fname, true, true)
       text = text:gsub("\n"..pname.."\n", "\n"..toon.."\n")
       text = text:gsub("\n"..name.."\n", "\n"..toon.."\n")
     end
@@ -897,7 +900,7 @@ function GameTooltip_Minimap_hook()
   for name in string.gmatch(text,"[^\n]+") do
     if not name:find("\124") then
       --debug("GameTooltip_Minimap_hook:"..name)
-      local toon = addon:formatToon(strtrim(name), true)
+      local toon = addon:formatToon(strtrim(name), true, true)
       text = text:gsub("\n"..name.."\n", "\n"..toon.."\n")
     end
   end
