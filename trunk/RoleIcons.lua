@@ -98,10 +98,11 @@ local function classColor(name, class, unit)
        color = "ffff1919" -- red
      end
    end
+   local cname = name
    if color then
-     name = "\124c"..color..name.."\124r"
+     cname = "\124c"..color..name.."\124r"
    end
-   return name
+   return cname, color, name
 end
 
 local server_prefixes = {
@@ -743,9 +744,10 @@ function addon:formatToon(toon, nolink, spacenone)
      not (UnitExists(toon) and (UnitInRaid(toon) or UnitInParty(toon))) then return toon end
   local role = UnitGroupRolesAssigned(toon)
   if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
-  local cname = trimServer(toon, true)
+  local cname,color,name = trimServer(toon, true)
   if not nolink then
-    cname = "[\124Hplayer:"..toon..":0\124h"..cname.."\124h]"
+    color = color and "\124c"..color or "" -- ticket 14: wrap color outside player link for Prat recognition
+    cname = "["..color.."\124Hplayer:"..toon..":0\124h"..name.."\124h"..(#color>0 and "\124r" or "").."]"
   end
   if (role and role ~= "NONE") then
      cname = getRoleTex(role,0)..cname
