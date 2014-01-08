@@ -686,7 +686,7 @@ function addon:UpdateServers(intt)
     local new = addon.lastServer
     if settings.serverinfo and not IsInInstance() and
        new and old and new ~= old then
-      chatMsg(L["Probable realm transfer"]..": "..
+      debug(L["Probable realm transfer"]..": "..
               old.name.." ("..old.num.." "..L["Players"].." / "..LEVEL.." "..old.maxlevel..")  ->  "..
               new.name.." ("..new.num.." "..L["Players"].." / "..LEVEL.." "..new.maxlevel..")")
     end
