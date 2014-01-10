@@ -108,6 +108,14 @@ end
 local server_prefixes = {
   The=1, Das=1, Der=1, Die=1, La=1, Le=1, Les=1, Los=1, Las=1,
 }
+local function utfbytewidth(s,b)
+  local c = s:byte(b)
+  if     c >= 194 and c <= 223 then return 2
+  elseif c >= 224 and c <= 239 then return 3
+  elseif c >= 240 and c <= 244 then return 4
+  else return 1
+  end
+end
 local function trimServer(name, colorunit)
   local class = colorunit and 
                 (UnitExists(colorunit) and select(2,UnitClass(colorunit))) or 
@@ -124,7 +132,11 @@ local function trimServer(name, colorunit)
     if prefix and server_prefixes[prefix] and #rname >= #prefix+3 then
       rname = rname:gsub("^"..prefix,"")
     end
-    rname = rname:gsub("^(...).*$","%1") -- trim
+    local p = 1 -- trim to first 3 utf8 characters
+    for i=1,3 do
+      p = p + utfbytewidth(rname, p)
+    end
+    rname = rname:sub(1, p-1) -- trim
   end
   local ret = cname..(rname and "-"..rname or "")
   return classColor(ret, class, colorunit)
@@ -369,18 +381,10 @@ local function DisplayServerTooltip()
   GameTooltip:AddLine(L["Server breakdown:"],1,1,1)
   GameTooltip:AddDoubleLine(L["Server"], L["Players"], 1,1,1,1,1,1)
 
-  local level = addon.serverList[1].maxlevel
-  local showlevel = false
-  for _,info in ipairs(addon.serverList) do
-    if info.maxlevel ~= level then 
-      showlevel = true
-      break
-    end
-  end
   for _,info in ipairs(addon.serverList) do
     local num = info.num
     local name = info.name
-    if showlevel then
+    if info.maxlevel > 0 and info.maxlevel ~= maxlvl then
       name = name.." ("..LEVEL.." "..info.maxlevel..")"
     end
     GameTooltip:AddDoubleLine(name, num)
