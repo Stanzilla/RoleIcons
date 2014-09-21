@@ -110,7 +110,8 @@ local server_prefixes = {
 }
 local function utfbytewidth(s,b)
   local c = s:byte(b)
-  if     c >= 194 and c <= 223 then return 2
+  if not c then return 0
+  elseif c >= 194 and c <= 223 then return 2
   elseif c >= 224 and c <= 239 then return 3
   elseif c >= 240 and c <= 244 then return 4
   else return 1
