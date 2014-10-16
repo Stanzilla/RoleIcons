@@ -906,9 +906,13 @@ function GameTooltip_Minimap_hook()
   text = text:gsub("(\124TInterface\\Minimap[^\124]+\124t)","%1\n\n") -- ignore up/down arrow textures
   for name in string.gmatch(text,"[^\n]+") do
     if not name:find("\124") then
-      --debug("GameTooltip_Minimap_hook:"..name)
+      debug("GameTooltip_Minimap_hook:"..name)
       local toon = addon:formatToon(strtrim(name), true, true)
-      text = text:gsub("\n"..name.."\n", "\n"..toon.."\n")
+      --text = text:gsub("\n"..name.."\n", "\n"..toon.."\n")
+      local s,e = text:find("\n"..name.."\n",1,true) -- avoid gsub to prevent problems with special chars
+      if s and e then
+        text = text:sub(1,s-1).."\n"..toon.."\n"..text:sub(e+1)
+      end
     end
   end
   text = strtrim(text)
