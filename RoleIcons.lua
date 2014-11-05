@@ -1117,6 +1117,7 @@ local function RegisterHooks()
 	GameTooltip:Show()
       end
       btn:SetScript("OnEnter",ttfn)
+      btn:SetScript("OnUpdate",function(self) self:SetFrameLevel(500) end) -- prevent adjacent panel edge from obscuring
       btn:SetScript("OnLeave",function() TTframe = nil; GameTooltip:Hide() end)
       local bkg = btn:GetRegions() -- background graphic is off-center and needs to be slid up
       bkg:ClearAllPoints()
