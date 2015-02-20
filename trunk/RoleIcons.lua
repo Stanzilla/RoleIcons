@@ -928,6 +928,9 @@ local function GetColoredName_hook(event, arg1, arg2, ...)
   local ret = GetColoredName_orig(event, arg1, arg2, ...)
   if chats[event] and settings.chat then
     local role = UnitGroupRolesAssigned(arg2)
+    if role == "NONE" and arg2:match(" *- *"..GetRealmName().."$") then -- ticket 20: ambiguate local toons
+      role = UnitGroupRolesAssigned(arg2:gsub(" *-[^-]+$",""))
+    end
     if (role and role ~= "NONE") then
         ret = getRoleTex(role,0)..""..ret
     end
