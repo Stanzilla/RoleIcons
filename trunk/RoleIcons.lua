@@ -230,7 +230,7 @@ end
 
 local function UpdateHBTT(unit)
   local gtt = HealBot_Globals and HealBot_Globals.UseGameTooltip
-  debug("UpdateHBTT: unit="..(unit or "nil").." gtt="..(gtt or "nil"))
+  debug("UpdateHBTT: unit="..tostring(unit).." gtt="..tostring(gtt))
   local tt = HealBot_Tooltip
   local ttl = HealBot_TooltipTextL1
   if gtt and gtt ~= 0 then 
