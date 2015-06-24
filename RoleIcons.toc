@@ -1,4 +1,4 @@
-## Interface: 60100
+## Interface: 60200
 ## Title: RoleIcons 
 ## Notes: Adds party/raid role icons in useful places
 ## Notes-zhTW: 在有用的地方加上隊伍/團隊角色圖示。
