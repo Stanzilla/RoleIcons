@@ -202,6 +202,8 @@ local frame = CreateFrame("Button", addonName.."HiddenFrame", UIParent)
 frame:RegisterEvent("ADDON_LOADED");
 frame:RegisterEvent("ROLE_POLL_BEGIN");
 frame:RegisterEvent("GROUP_ROSTER_UPDATE");
+frame:RegisterEvent("PARTY_INVITE_REQUEST");
+frame:RegisterEvent("GROUP_JOINED");
 frame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED");
 frame:RegisterEvent("PLAYER_TARGET_CHANGED");
 frame:RegisterEvent("PLAYER_FOCUS_CHANGED");
@@ -230,6 +232,7 @@ end
 
 local function UpdateHBTT(unit)
   local gtt = HealBot_Globals and HealBot_Globals.UseGameTooltip
+  if unit == "NONE" then return end
   debug("UpdateHBTT: unit="..tostring(unit).." gtt="..tostring(gtt))
   local tt = HealBot_Tooltip
   local ttl = HealBot_TooltipTextL1
@@ -582,7 +585,7 @@ local function UpdateRGF()
 end
 addon.UpdateRGF = UpdateRGF
 
-function addon:UpdateServers(intt)
+function addon:UpdateServers(intt, groupjoin)
   addon.servers = addon.servers or {}
   addon.levelcache = addon.levelcache or {}
   addon.rolecache = addon.rolecache or {}
@@ -590,24 +593,31 @@ function addon:UpdateServers(intt)
   for _,info in pairs(addon.servers) do
     info.num = 0
     info.maxlevel = 0
+    info.unknownlevel = false
   end
   local num = GetNumGroupMembers()
   for i=1,num do
-    local name, realm, level, class
+    local name, realm, level, class, islead
     if IsInRaid() then
-      local _
-      name, _, _, level, _, class = GetRaidRosterInfo(i)
+      local _, rank
+      name, rank, _, level, _, class = GetRaidRosterInfo(i)
       realm = name and name:match("-([^-]+)$")
       if not level or level == 0 then level = UnitLevel("raid"..i) end -- empty for offline
       if not class or class == "UNKNOWN" then class = select(2,UnitClass("raid"..i)) end -- empty for offline
+      islead = (rank == 2)
     else
       local unit = "player"
       if i < num then unit = "party"..i end
       name, realm = UnitName(unit)
       level = UnitLevel(unit)
       class = select(2,UnitClass(unit))
+      islead = UnitIsGroupLeader(unit)
     end
     if name and level then
+      if islead and level == 0 and name == UNKNOWN then 
+        -- leader info can be delayed on cross-realm invite
+	name, realm = addon.inviteleader:match("^([^-]+)-([^-]+)$")
+      end
       if not realm or realm == "" then realm = GetRealmName() end
       local fullname = name
       if not name:match("-([^-]+)$") then fullname = name.."-"..realm end
@@ -628,7 +638,22 @@ function addon:UpdateServers(intt)
       addon.servers[realm] = r
       r.num = r.num + 1 
       r.maxlevel = math.max(r.maxlevel, level)
+      if level == 0 then
+        r.unknownlevel = true
+      end
+      if groupjoin and islead then
+        -- joined a new group, default to assuming we are on leader's realm
+	debug("leader lastServer = "..realm)
+	addon.lastServer = r
+      end
     end
+    --myprint(i,name,realm,level,islead)
+  end
+
+  if not addon.lastServer and settings.state and settings.state.lastServer then -- restore lastServer from previous session
+    addon.lastServer = addon.servers[settings.state.lastServer]
+    settings.state.lastServer = nil -- only once
+    debug("Restored lastServer="..tostring(addon.lastServer and addon.lastServer.name))
   end
 
   if not addon.serverFrame then
@@ -672,7 +697,11 @@ function addon:UpdateServers(intt)
     local old = addon.lastServer
     local curr = list[1].name
     local color
-    if list[1].maxlevel > list[2].maxlevel or 
+    if old and old.unknownlevel and old.num > 0 then 
+      -- level info is missing for a group member on lastserver, suppress possible transfer
+       color = "|cffff1919" -- red
+       curr = old.name
+    elseif list[1].maxlevel > list[2].maxlevel or 
        list[1].num >= list[2].num + 2 then
        color = "|cff19ff19" -- green
        addon.lastServer = list[1]
@@ -681,7 +710,7 @@ function addon:UpdateServers(intt)
        addon.lastServer = list[1]
     else
        color = "|cffff1919" -- red
-       if old and not select(2,SortServers(addon.serverList[1],old)) then
+       if old and not select(2,SortServers(list[1],old)) then
          curr = old.name
        else
 	 curr = curr.." ?"
@@ -701,6 +730,9 @@ function addon:UpdateServers(intt)
     else
       addon.serverFrame:Hide()
     end
+  end
+  if settings.state then -- save lastServer between sessions
+    settings.state.lastServer = addon.lastServer and addon.lastServer.name
   end
   if not intt and TTframe and TTfunc and 
      GameTooltip:IsShown() and GameTooltip:GetOwner() == TTframe then -- dynamically update tooltip
@@ -1164,6 +1196,7 @@ local function OnEvent(frame, event, name, ...)
          settings[k] = defaults[k][1]
        end
      end
+     settings.state = settings.state or {}
      addon:SetupVersion()
      RegisterHooks() 
      addon:UpdateServers()
@@ -1194,6 +1227,14 @@ local function OnEvent(frame, event, name, ...)
        end
      end
   end
+  if event == "PARTY_INVITE_REQUEST" then
+    addon.inviteleader = name
+    debug("PARTY_INVITE_REQUEST: "..tostring(addon.inviteleader))
+  end
+  if event == "GROUP_JOINED" then
+    debug("GROUP_JOINED")
+    addon:UpdateServers(false, true)
+  end
   if event == "GROUP_ROSTER_UPDATE" then
     addon:UpdateServers()
   end
@@ -1205,7 +1246,7 @@ SlashCmdList["ROLEICONS"] = function(msg)
         local cmd = msg:lower()
 	if cmd == "check" then
 	  InitiateRolePoll() 
-        elseif settings[cmd] ~= nil then
+        elseif type(settings[cmd]) == "boolean" then
           settings[cmd] = not settings[cmd]
           chatMsg(cmd..L[" set to "]..(settings[cmd] and YES or NO))
 	  RegisterHooks()
