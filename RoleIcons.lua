@@ -614,9 +614,10 @@ function addon:UpdateServers(intt, groupjoin)
       islead = UnitIsGroupLeader(unit)
     end
     if name and level then
-      if islead and level == 0 and name == UNKNOWN then 
+      if islead and level == 0 and name == UNKNOWN and addon.inviteleader then 
         -- leader info can be delayed on cross-realm invite
 	name, realm = addon.inviteleader:match("^([^-]+)-([^-]+)$")
+	if not name then name = addon.inviteleader end -- same realm
       end
       if not realm or realm == "" then realm = GetRealmName() end
       local fullname = name
