@@ -119,7 +119,7 @@ local function utfbytewidth(s,b)
 end
 local function trimServer(name, colorunit)
   local class = colorunit and 
-                (UnitExists(colorunit) and select(2,UnitClass(colorunit))) or 
+                (type(colorunit) == "string" and UnitExists(colorunit) and select(2,UnitClass(colorunit))) or 
 		addon.classcache[name] or
 		select(2,UnitClass(name))
   name = name:gsub("%s","") -- remove space
