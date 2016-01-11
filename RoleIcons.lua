@@ -88,7 +88,7 @@ local function debug(msg)
 end
 
 local function classColor(name, class, unit)
-   if not class then return name end
+   if not class then return name, nil, unit end
    local color = RAID_CLASS_COLORS[class]
    color = color and color.colorStr
    if unit and UnitExists(unit) then
@@ -637,7 +637,9 @@ function addon:UpdateServers(intt, groupjoin)
       end
       local r = addon.servers[realm] or { num=0, maxlevel=0, name=realm }
       addon.servers[realm] = r
-      r.num = r.num + 1 
+      if level ~= 1 then -- since 6.x level 1's don't affect phasing
+        r.num = r.num + 1 
+      end
       r.maxlevel = math.max(r.maxlevel, level)
       if level == 0 then
         r.unknownlevel = true
@@ -693,19 +695,24 @@ function addon:UpdateServers(intt, groupjoin)
   if cnt < 2 then
     addon.serverFrame:Hide()
     addon.lastServer = list[1] -- nil for ungrouped
+    addon.serverText:SetText((addon.lastServer and addon.lastServer.name) or GetRealmName()) -- for 3rd party addons
   else
     table.sort(list, SortServers)
     local old = addon.lastServer
     local curr = list[1].name
     local color
     if old and old.unknownlevel and old.num > 0 then 
-      -- level info is missing for a group member on lastserver, suppress possible transfer
+       debug("level info missing for a group member on lastserver, suppressing possible transfer")
        color = "|cffff1919" -- red
        curr = old.name
     elseif list[1].maxlevel > list[2].maxlevel or 
        list[1].num >= list[2].num + 2 then
        color = "|cff19ff19" -- green
        addon.lastServer = list[1]
+    elseif list[1].num == list[2].num + 1 and old == list[2] and list[1].unknownlevel then
+       debug("level info missing for a group member on newserver, suppressing possible transfer")
+       color = "|cffff1919" -- red
+       curr = old.name
     elseif list[1].num >= list[2].num + 1 then
        color = "|cffffff00" -- yellow
        addon.lastServer = list[1]
@@ -725,8 +732,8 @@ function addon:UpdateServers(intt, groupjoin)
               old.name.." ("..old.num.." "..L["Players"].." / "..LEVEL.." "..old.maxlevel..")  ->  "..
               new.name.." ("..new.num.." "..L["Players"].." / "..LEVEL.." "..new.maxlevel..")")
     end
+    addon.serverText:SetText(color..curr.."|r")
     if settings.serverinfo then
-      addon.serverText:SetText(color..curr.."|r")
       addon.serverFrame:Show()
     else
       addon.serverFrame:Hide()
@@ -784,8 +791,13 @@ function addon:formatToon(toon, nolink, spacenone)
   if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
   local cname,color,name = trimServer(toon, true)
   if not nolink then
-    color = color and "\124c"..color or "" -- ticket 14: wrap color outside player link for Prat recognition
-    cname = "["..color.."\124Hplayer:"..toon..":0\124h"..name.."\124h"..(#color>0 and "\124r" or "").."]"
+    -- ticket 14: wrap color outside player link for Prat recognition
+    --color = color and "\124c"..color or "" 
+    --cname = "["..color.."\124Hplayer:"..toon..":0\124h"..name.."\124h"..(#color>0 and "\124r" or "").."]"
+    cname = string.format("[%s%s\124Hplayer:%s:0\124h%s\124h%s]", 
+                           color and "\124c" or "", color or "",
+			   toon, name,
+			   color and "\124r" or "")
   end
   if (role and role ~= "NONE") then
      cname = getRoleTex(role,0)..cname
