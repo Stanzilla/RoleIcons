@@ -88,7 +88,7 @@ local function debug(msg)
 end
 
 local function classColor(name, class, unit)
-   if not class then return name, nil, unit end
+   if not class then return name, nil, name end
    local color = RAID_CLASS_COLORS[class]
    color = color and color.colorStr
    if unit and UnitExists(unit) then
