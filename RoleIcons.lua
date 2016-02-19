@@ -140,7 +140,7 @@ local function trimServer(name, colorunit)
     rname = rname:sub(1, p-1) -- trim
   end
   local ret = cname..(rname and "-"..rname or "")
-  return classColor(ret, class, colorunit)
+  return classColor(ret, class, type(colorunit) == "string" and colorunit)
 end
 function addon:trimServer(...) return trimServer(...) end
 
