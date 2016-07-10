@@ -5,7 +5,7 @@ local addon = RoleIcons
 local _G = getfenv(0)
 
 -- GLOBALS: GameTooltip_Minimap_hook DEFAULT_CHAT_FRAME RAID_CLASS_COLORS RoleIcons RoleIconsDB
--- GLOBALS: SLASH_ROLEICONS1 SLASH_ROLECHECK1 GameTooltip GameTooltipTextLeft1 YES NO LEVEL RaidFrame
+-- GLOBALS: SLASH_ROLEICONS1 SLASH_ROLECHECK1 GameTooltip GameTooltipTextLeft1 YES NO LEVEL RaidFrame RolePollPopup
 
 local string, table, pairs, ipairs, tonumber, wipe =
       string, table, pairs, ipairs, tonumber, wipe
@@ -14,7 +14,6 @@ local InCombatLockdown, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, 
 local defaults = {
   raid =         { true,  L["Show role icons on the Raid tab"] },
   tooltip =      { true,  L["Show role icons in player tooltips"] },
-  hbicon =       { false, L["Show role icons in HealBot bars"] },
   chat =         { false,  L["Show role icons in chat windows"] },
   system =       { false,  L["Show role icons in system messages"] },
   debug =        { false, L["Debug the addon"] },
@@ -109,7 +108,7 @@ local function classColor(name, class, unit)
 end
 
 local server_prefixes = {
-  The=1, Das=1, Der=1, Die=1, La=1, Le=1, Les=1, Los=1, Las=1,
+  The = 1, Das = 1, Der = 1, Die = 1, La = 1, Le = 1, Les = 1, Los = 1, Las = 1,
 }
 local function utfbytewidth(s,b)
   local c = s:byte(b)
@@ -309,21 +308,21 @@ local function DisplayServerTooltip()
   GameTooltip:SetOwner(addon.serverFrame)
   TTframe = addon.serverFrame
   TTfunc = DisplayServerTooltip
-  GameTooltip:SetAnchorType("ANCHOR_BOTTOMRIGHT",-1*addon.serverFrame:GetWidth())
-  GameTooltip:AddLine(L["Server breakdown:"],1,1,1)
-  GameTooltip:AddDoubleLine(L["Server"], L["Players"], 1,1,1,1,1,1)
+  GameTooltip:SetAnchorType("ANCHOR_BOTTOMRIGHT", -1 * addon.serverFrame:GetWidth())
+  GameTooltip:AddLine(L["Server breakdown:"], 1, 1, 1)
+  GameTooltip:AddDoubleLine(L["Server"], L["Players"], 1, 1, 1, 1, 1, 1)
 
   for _,info in ipairs(addon.serverList) do
     local num = info.num
     local name = info.name
     if info.maxlevel > 0 and info.maxlevel ~= maxlvl then
-      name = name.." ("..LEVEL.." "..info.maxlevel..")"
+      name = name .. " (".. LEVEL .." ".. info.maxlevel .. ")"
     end
     GameTooltip:AddDoubleLine(name, num)
   end
 
   GameTooltip:AddLine(" ")
-  GameTooltip:AddLine(L["Left-click to report in chat"],1,1,1)
+  GameTooltip:AddLine(L["Left-click to report in chat"], 1, 1, 1)
   GameTooltip:Show()
 end
 
@@ -333,18 +332,18 @@ function addon:ServerChatString(maxentries)
   local cnt = 0
   for _,info in ipairs(addon.serverList) do
     if cnt == maxentries or #str > 200 then
-      str = str..", ..."
+      str = str ..", ..."
       break
     end
     cnt = cnt + 1
     if #str > 0 then str = str .. ", " end
     local lvlstr = ""
     if level < maxlvl or info.maxlevel < level then
-      lvlstr = "/"..LEVEL.." "..info.maxlevel
+      lvlstr = "/" .. LEVEL .. " " .. info.maxlevel
     end
-    str = str..info.name.."("..info.num..lvlstr..")"
+    str = str .. info.name .. "(" .. info.num .. lvlstr .. ")"
   end
-  return addonName..": "..L["Server breakdown:"].." "..str
+  return addonName .. ": " .. L["Server breakdown:"] .. " " .. str
 end
 
 local function SortServers(a,b)
@@ -361,7 +360,7 @@ local function UpdateRGF()
   if not RaidFrame then return end
   if UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") then
      if not addon.rolecheckbtn and RaidFrameRaidInfoButton and RaidFrameAllAssistCheckButton then
-       local btn = CreateFrame("Button","RaidIconsRoleCheckBtn",RaidFrame,"UIPanelButtonTemplate")
+       local btn = CreateFrame("Button", "RaidIconsRoleCheckBtn", RaidFrame, "UIPanelButtonTemplate")
        btn:SetSize(RaidFrameRaidInfoButton:GetSize())
        btn:SetText(ROLE_POLL)
        btn:SetPoint("BOTTOMLEFT", RaidFrameAllAssistCheckButton, "TOPLEFT", 0, 2)
@@ -407,7 +406,7 @@ local function UpdateRGF()
         end
         addon.maxraidlvl = math.max(addon.maxraidlvl, lvl or 0)
         if addon.unitstatus[guid] then
-          btn:GetNormalTexture():SetTexture(0.5,0,0)
+          btn:GetNormalTexture():SetTexture(0.5, 0, 0)
         end
         name = classColor(name, class, unit)
         role = role or "NONE"
@@ -423,7 +422,7 @@ local function UpdateRGF()
             else
               --print(unit.." "..lvl)
               txt1 = lvl
-              txt2 = getRoleTex(role,riconsz).." "..lclass
+              txt2 = getRoleTex(role,riconsz) .. " " .. lclass
             end
             btn.subframes.level:SetDrawLayer("OVERLAY")
             btn.subframes.level:SetText(txt1)
@@ -431,7 +430,7 @@ local function UpdateRGF()
             btn.subframes.class:SetText(txt2)
             if txt1 ~= lvl and btn.subframes.level:IsTruncated() then
               riconsz = riconsz - 1
-              debug("Reduced iconsz to: "..riconsz)
+              debug("Reduced iconsz to: " .. riconsz)
               UpdateRGF()
               return
             end
@@ -543,8 +542,10 @@ function addon:UpdateServers(intt, groupjoin)
     if name and level then
       if islead and level == 0 and name == UNKNOWN and addon.inviteleader then
         -- leader info can be delayed on cross-realm invite
-	name, realm = addon.inviteleader:match("^([^-]+)-([^-]+)$")
-	if not name then name = addon.inviteleader end -- same realm
+	      name, realm = addon.inviteleader:match("^([^-]+)-([^-]+)$")
+	      if not name then
+          name = addon.inviteleader
+        end -- same realm
       end
       if not realm or realm == "" then realm = GetRealmName() end
       local fullname = name
@@ -577,7 +578,6 @@ function addon:UpdateServers(intt, groupjoin)
 	addon.lastServer = r
       end
     end
-    --myprint(i,name,realm,level,islead)
   end
 
   if not addon.lastServer and settings.state and settings.state.lastServer then -- restore lastServer from previous session
@@ -653,8 +653,7 @@ function addon:UpdateServers(intt, groupjoin)
        end
     end
     local new = addon.lastServer
-    if settings.serverinfo and not IsInInstance() and
-       new and old and new ~= old then
+    if settings.serverinfo and not IsInInstance() and new and old and new ~= old then
       debug(L["Probable realm transfer"]..": "..
               old.name.." ("..old.num.." "..L["Players"].." / "..LEVEL.." "..old.maxlevel..")  ->  "..
               new.name.." ("..new.num.." "..L["Players"].." / "..LEVEL.." "..new.maxlevel..")")
@@ -669,8 +668,7 @@ function addon:UpdateServers(intt, groupjoin)
   if settings.state then -- save lastServer between sessions
     settings.state.lastServer = addon.lastServer and addon.lastServer.name
   end
-  if not intt and TTframe and TTfunc and
-     GameTooltip:IsShown() and GameTooltip:GetOwner() == TTframe then -- dynamically update tooltip
+  if not intt and TTframe and TTfunc and GameTooltip:IsShown() and GameTooltip:GetOwner() == TTframe then -- dynamically update tooltip
      TTfunc(TTframe)
   end
 end
@@ -721,10 +719,7 @@ function addon:formatToon(toon, nolink, spacenone)
     -- ticket 14: wrap color outside player link for Prat recognition
     --color = color and "\124c"..color or ""
     --cname = "["..color.."\124Hplayer:"..toon..":0\124h"..name.."\124h"..(#color>0 and "\124r" or "").."]"
-    cname = string.format("[%s%s\124Hplayer:%s:0\124h%s\124h%s]",
-                           color and "\124c" or "", color or "",
-			   toon, name,
-			   color and "\124r" or "")
+    cname = string.format("[%s%s\124Hplayer:%s:0\124h%s\124h%s]", color and "\124c" or "", color or "", toon, name, color and "\124r" or "")
   end
   if (role and role ~= "NONE") then
      cname = getRoleTex(role,0)..cname
@@ -1024,8 +1019,7 @@ local function RegisterHooks()
         lastrcb = rcb
       end
   end
-  if settings.rolebuttons and not addon.rolebuttons
-     and RaidClassButton1 then -- for RaidClassButtonTemplate
+  if settings.rolebuttons and not addon.rolebuttons and RaidClassButton1 then -- for RaidClassButtonTemplate
     addon.rolebuttons = {}
     local last
     for idx,role in ipairs({"TANK","HEALER","DAMAGER"}) do
@@ -1043,17 +1037,17 @@ local function RegisterHooks()
       btn:SetScript("OnLoad",function(self) end)
       local function ttfn(self)
         --GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
-	GameTooltip:SetOwner(self)
+	      GameTooltip:SetOwner(self)
         TTframe = self
         TTfunc = ttfn
-	GameTooltip:SetAnchorType("ANCHOR_RIGHT")
+	      GameTooltip:SetAnchorType("ANCHOR_RIGHT")
         GameTooltip:SetText(getRoleTex(role).._G[role] .. " ("..(btn.rolecnt or 0)..")")
         GameTooltip:AddLine(toonList(role),1,1,1,true)
-	GameTooltip:Show()
+	      GameTooltip:Show()
       end
-      btn:SetScript("OnEnter",ttfn)
-      btn:SetScript("OnUpdate",function(self) self:SetFrameLevel(500) end) -- prevent adjacent panel edge from obscuring
-      btn:SetScript("OnLeave",function() TTframe = nil; GameTooltip:Hide() end)
+      btn:SetScript("OnEnter", ttfn)
+      btn:SetScript("OnUpdate", function(self) self:SetFrameLevel(500) end) -- prevent adjacent panel edge from obscuring
+      btn:SetScript("OnLeave", function() TTframe = nil; GameTooltip:Hide() end)
       local bkg = btn:GetRegions() -- background graphic is off-center and needs to be slid up
       bkg:ClearAllPoints()
       bkg:SetPoint("TOPLEFT",-2,8)
@@ -1067,7 +1061,7 @@ local function RegisterHooks()
       addon.rolebuttons[role] = btn
       last = btn
     end
-    addon.rolebuttons["TANK"]:SetPoint("TOPLEFT",FriendsFrameCloseButton,"BOTTOMRIGHT",-1,8)
+    addon.rolebuttons["TANK"]:SetPoint("TOPLEFT", FriendsFrameCloseButton, "BOTTOMRIGHT",-1,8)
   end
   if RolePollPopup and not reg["rpp"] then
      addon.rppevent = RolePollPopup:GetScript("OnEvent")
