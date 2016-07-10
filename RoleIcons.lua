@@ -1,33 +1,32 @@
 local addonName, vars = ...
 local L = vars.L
-local LaddonName = L[addonName]
 RoleIcons = vars
 local addon = RoleIcons
 local _G = getfenv(0)
 
 -- GLOBALS: GameTooltip_Minimap_hook DEFAULT_CHAT_FRAME RAID_CLASS_COLORS RoleIcons RoleIconsDB
--- GLOBALS: SLASH_ROLEICONS1 SLASH_ROLECHECK1 GameTooltip GameTooltipTextLeft1 YES NO
+-- GLOBALS: SLASH_ROLEICONS1 SLASH_ROLECHECK1 GameTooltip GameTooltipTextLeft1 YES NO LEVEL RaidFrame
 
 local string, table, pairs, ipairs, tonumber, wipe =
       string, table, pairs, ipairs, tonumber, wipe
 local InCombatLockdown, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitIsGroupLeader, UnitIsGroupAssistant =
       InCombatLockdown, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitIsGroupLeader, UnitIsGroupAssistant
 local defaults = {
-  raid =         { false,  L["Show role icons on the Raid tab"] },
-  tooltip =      { false,  L["Show role icons in player tooltips"] },
+  raid =         { true,  L["Show role icons on the Raid tab"] },
+  tooltip =      { true,  L["Show role icons in player tooltips"] },
   hbicon =       { false, L["Show role icons in HealBot bars"] },
   chat =         { false,  L["Show role icons in chat windows"] },
   system =       { false,  L["Show role icons in system messages"] },
   debug =        { false, L["Debug the addon"] },
   classbuttons = { false,  L["Add class summary buttons to the Raid tab"] },
   rolebuttons =  { false,  L["Add role summary buttons to the Raid tab"] },
-  serverinfo =   { false,  L["Add server info frame to the Raid tab"] },
+  serverinfo =   { true,  L["Add server info frame to the Raid tab"] },
   trimserver =   { false,  L["Trim server names in tooltips"] },
   autorole =     { false,  L["Automatically set role and respond to role checks based on your spec"] },
   target =       { false,  L["Show role icons on the target frame (default Blizzard frames)"] },
   focus =        { false,  L["Show role icons on the focus frame (default Blizzard frames)"] },
   popup =        { false,  L["Show role icons in unit popup menus"] },
-  map =          { false,  L["Show role icons in map tooltips"] },
+  map =          { true,  L["Show role icons in map tooltips"] },
 }
 local settings
 local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE]
@@ -83,7 +82,7 @@ local function getRoleTexCoord(role)
 end
 
 local function chatMsg(msg)
-     DEFAULT_CHAT_FRAME:AddMessage("|cff6060ff"..LaddonName.."|r: "..msg)
+     DEFAULT_CHAT_FRAME:AddMessage("|cff6060ff"..addonName.."|r: "..msg)
 end
 local function debug(msg)
   if settings and settings.debug then
@@ -231,19 +230,19 @@ local function UpdateTT(tt, unit, ttline)
 end
 
 local function RoleMenuInitialize(self)
-        UnitPopup_ShowMenu(UIDROPDOWNMENU_OPEN_MENU, "SELECT_ROLE", self.unit, self.name, self.id);
+  UnitPopup_ShowMenu(UIDROPDOWNMENU_OPEN_MENU, "SELECT_ROLE", self.unit, self.name, self.id);
 end
 
 local function ShowRoleMenu(self)
-        HideDropDownMenu(1);
-        if ( self.id and self.name ) then
-                FriendsDropDown.name = self.name;
-                FriendsDropDown.id = self.id;
-                FriendsDropDown.unit = self.unit;
-                FriendsDropDown.initialize = RoleMenuInitialize;
-                FriendsDropDown.displayMode = "MENU";
-                ToggleDropDownMenu(1, nil, FriendsDropDown, "cursor");
-        end
+  HideDropDownMenu(1);
+  if ( self.id and self.name ) then
+    FriendsDropDown.name = self.name;
+    FriendsDropDown.id = self.id;
+    FriendsDropDown.unit = self.unit;
+    FriendsDropDown.initialize = RoleMenuInitialize;
+    FriendsDropDown.displayMode = "MENU";
+    ToggleDropDownMenu(1, nil, FriendsDropDown, "cursor");
+  end
 end
 
 local classcnt = {}
@@ -390,77 +389,76 @@ local function UpdateRGF()
       end
     end
     if btn and btn.unit and btn.subframes and btn.subframes.level and btn:IsVisible() then
-       local unit = btn.unit
-       if unit then
-         local role = UnitGroupRolesAssigned(unit)
-	 local name = UnitName(unit)
-         local guid = UnitGUID(unit)
-	 local lclass,class = UnitClass(unit)
-         if (not class or #class == 0) and btn.name then
-            lclass,class = UnitClass(btn.name)
-         end
-	 if class then
-           classcnt[class] = (classcnt[class] or 0) + 1
-	 end
-         local lvl = UnitLevel(unit)
-         if not lvl or lvl == 0 then
-           lvl = (btn.name and UnitLevel(btn.name)) or 0
-         end
-	 addon.maxraidlvl = math.max(addon.maxraidlvl, lvl or 0)
-
-         if addon.unitstatus[guid] then
-            btn:GetNormalTexture():SetTexture(0.5,0,0)
-         end
-	 name = classColor(name, class, unit)
-	 role = role or "NONE"
-	 rolecnt[role] = (rolecnt[role] or 0) + 1
-         if role ~= "NONE" then
-	   lclass = lclass or ""
-           if settings.raid then
-	    local txt1 = lvl
-	    local txt2 = lclass
-	    if (lvl == guessmaxraidlvl or lvl == 0) then -- sometimes returns 0 during moves
-	     txt1 = getRoleTex(role,riconsz)
-	     txt2 = lclass
+      local unit = btn.unit
+      if unit then
+        local role = UnitGroupRolesAssigned(unit)
+        local name = UnitName(unit)
+        local guid = UnitGUID(unit)
+        local lclass,class = UnitClass(unit)
+        if (not class or #class == 0) and btn.name then
+          lclass,class = UnitClass(btn.name)
+        end
+        if class then
+          classcnt[class] = (classcnt[class] or 0) + 1
+        end
+        local lvl = UnitLevel(unit)
+        if not lvl or lvl == 0 then
+          lvl = (btn.name and UnitLevel(btn.name)) or 0
+        end
+        addon.maxraidlvl = math.max(addon.maxraidlvl, lvl or 0)
+        if addon.unitstatus[guid] then
+          btn:GetNormalTexture():SetTexture(0.5,0,0)
+        end
+        name = classColor(name, class, unit)
+        role = role or "NONE"
+        rolecnt[role] = (rolecnt[role] or 0) + 1
+        if role ~= "NONE" then
+          lclass = lclass or ""
+          if settings.raid then
+            local txt1 = lvl
+            local txt2 = lclass
+            if (lvl == guessmaxraidlvl or lvl == 0) then -- sometimes returns 0 during moves
+              txt1 = getRoleTex(role,riconsz)
+              txt2 = lclass
             else
-             --print(unit.." "..lvl)
-	     txt1 = lvl
-	     txt2 = getRoleTex(role,riconsz).." "..lclass
-	    end
+              --print(unit.." "..lvl)
+              txt1 = lvl
+              txt2 = getRoleTex(role,riconsz).." "..lclass
+            end
             btn.subframes.level:SetDrawLayer("OVERLAY")
             btn.subframes.level:SetText(txt1)
             btn.subframes.class:SetDrawLayer("OVERLAY")
             btn.subframes.class:SetText(txt2)
-	    if txt1 ~= lvl and btn.subframes.level:IsTruncated() then
-	       riconsz = riconsz - 1
-	       debug("Reduced iconsz to: "..riconsz)
-	       UpdateRGF()
-	       return
-	    end
-           end
-         end
-       end
-       if not InCombatLockdown() then
-         -- extra bonus, make the secure frames targettable
-         btn:SetAttribute("type1", "target")
-         btn:SetAttribute("unit", btn.unit)
-       end
-       addon.btnhook = addon.btnhook or {}
-       if not addon.btnhook[btn] then
-         btn:RegisterForClicks("AnyUp")
-	       btn:SetScript("OnEnter", function(self) -- override to remove obsolete shift-drag prompt
-	       RaidGroupButton_OnEnter(self);
-	       if RaidFrame:IsMouseOver() then
-	         GameTooltip:Show()
-         end
-	 end)
-         btn:HookScript("OnClick", function(self, button)
-	   if button == "MiddleButton" then
-	     ShowRoleMenu(self)
-	   end
-	 end)
-	 addon.btnhook[btn] = true
-       end
+            if txt1 ~= lvl and btn.subframes.level:IsTruncated() then
+              riconsz = riconsz - 1
+              debug("Reduced iconsz to: "..riconsz)
+              UpdateRGF()
+              return
+            end
+          end
+        end
+      end
+      if not InCombatLockdown() then
+        -- extra bonus, make the secure frames targettable
+        btn:SetAttribute("type1", "target")
+        btn:SetAttribute("unit", btn.unit)
+      end
+      addon.btnhook = addon.btnhook or {}
+      if not addon.btnhook[btn] then
+        btn:RegisterForClicks("AnyUp")
+        btn:SetScript("OnEnter", function(self) -- override to remove obsolete shift-drag prompt
+          RaidGroupButton_OnEnter(self);
+          if RaidFrame:IsMouseOver() then
+            GameTooltip:Show()
+          end
+        end)
+        btn:HookScript("OnClick", function(self, button)
+      	  if button == "MiddleButton" then
+            ShowRoleMenu(self)
+      	  end
+        end)
+        addon.btnhook[btn] = true
+      end
     end
   end
   if addon.maxraidlvl ~= guessmaxraidlvl then -- cache miss
@@ -468,39 +466,39 @@ local function UpdateRGF()
     return
   end
   if addon.rolebuttons then
-  for role,btn in pairs(addon.rolebuttons) do
-    if settings.rolebuttons and UnitInRaid("player") and not RaidInfoFrame:IsShown() then
-      btn.rolecnt = rolecnt[role] or 0
-      _G[btn:GetName().."Count"]:SetText(btn.rolecnt)
-      btn:Show()
-    else
-      btn:Hide()
+    for role,btn in pairs(addon.rolebuttons) do
+      if settings.rolebuttons and UnitInRaid("player") and not RaidInfoFrame:IsShown() then
+        btn.rolecnt = rolecnt[role] or 0
+        _G[btn:GetName().."Count"]:SetText(btn.rolecnt)
+        btn:Show()
+      else
+        btn:Hide()
+      end
     end
-  end
   end
   if addon.classbuttons then
-  for i,btn in ipairs(addon.classbuttons) do
-    local class = btn.class
-    local count = classcnt[class]
-    if settings.classbuttons and UnitInRaid("player") and i <= MAX_CLASSES and not RaidInfoFrame:IsShown() then
-        btn:Show()
-        local icon = _G[btn:GetName().."IconTexture"]
-        local fs = _G[btn:GetName().."Count"]
- 	if count and count > 0 then
-	  fs:SetTextHeight(12) -- got too small in 5.x for some reason
-	  fs:SetText(count)
-	  fs:Show()
-	  icon:SetAlpha(1)
-	  SetItemButtonDesaturated(btn, nil)
-	else
-	  fs:Hide()
-	  icon:SetAlpha(0.5)
-	  SetItemButtonDesaturated(btn, true)
-	end
-    else
-        btn:Hide()
+    for i,btn in ipairs(addon.classbuttons) do
+      local class = btn.class
+      local count = classcnt[class]
+      if settings.classbuttons and UnitInRaid("player") and i <= MAX_CLASSES and not RaidInfoFrame:IsShown() then
+          btn:Show()
+          local icon = _G[btn:GetName().."IconTexture"]
+          local fs = _G[btn:GetName().."Count"]
+   	if count and count > 0 then
+  	  fs:SetTextHeight(12) -- got too small in 5.x for some reason
+  	  fs:SetText(count)
+  	  fs:Show()
+  	  icon:SetAlpha(1)
+  	  SetItemButtonDesaturated(btn, nil)
+  	else
+  	  fs:Hide()
+  	  icon:SetAlpha(0.5)
+  	  SetItemButtonDesaturated(btn, true)
+  	end
+      else
+          btn:Hide()
+      end
     end
-  end
   end
   if not addon.headerFrame then
     addon.headerFrame = CreateFrame("Button", addonName.."HeaderButton", RaidFrame)
@@ -1110,8 +1108,8 @@ local function OnEvent(frame, event, name, ...)
      UpdateTarget("focus")
   elseif event == "ROLE_POLL_BEGIN" or
          event == "GROUP_ROSTER_UPDATE" or
-	 event == "ACTIVE_TALENT_GROUP_CHANGED" or
-	 event == "PLAYER_REGEN_ENABLED" then
+	       event == "ACTIVE_TALENT_GROUP_CHANGED" or
+	       event == "PLAYER_REGEN_ENABLED" then
      UpdateTarget("target")
      UpdateTarget("focus")
      if settings.autorole and not InCombatLockdown() then
@@ -1119,7 +1117,7 @@ local function OnEvent(frame, event, name, ...)
        if (currrole == "NONE" and event ~= "ACTIVE_TALENT_GROUP_CHANGED") or
           (currrole ~= "NONE" and event == "ACTIVE_TALENT_GROUP_CHANGED") then
          local role = myDefaultRole()
-	 if role and role ~= "NONE" then
+	        if role and role ~= "NONE" then
            debug(event.." setting "..role)
            UnitSetRole("player", role)
            --RolePollPopup:Hide()
@@ -1154,7 +1152,6 @@ SlashCmdList["ROLEICONS"] = function(msg)
     UpdateRGF()
   else
     local usage = ""
-    chatMsg(LaddonName.." "..addon.version)
     for c,_ in pairs(defaults) do
       usage = usage.." | "..c
     end

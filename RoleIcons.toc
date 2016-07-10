@@ -1,5 +1,5 @@
 ## Interface: 60200
-## Title: RoleIcons 
+## Title: RoleIcons
 ## Notes: Adds party/raid role icons in useful places
 ## Notes-zhTW: 在有用的地方加上隊伍/團隊角色圖示。
 ## Notes-zhCN: 在有用的地方添加队伍/团队角色图示。
@@ -8,7 +8,7 @@
 ## X-Build: @project-revision@
 ## X-ReleaseDate: @project-date-iso@
 ## X-Revision: $Revision$
-## SavedVariablesPerCharacter: RoleIconsDB
+## SavedVariables: RoleIconsDB
 ## LoadManagers: AddonLoader
 ## X-LoadOn-Always: delayed
 
