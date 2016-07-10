@@ -1137,9 +1137,7 @@ frame:SetScript("OnEvent", OnEvent);
 SLASH_ROLEICONS1 = L["/ri"]
 SlashCmdList["ROLEICONS"] = function(msg)
   local cmd = msg:lower()
-  if cmd == "check" then
-    InitiateRolePoll()
-  elseif type(settings[cmd]) == "boolean" then
+  if type(settings[cmd]) == "boolean" then
     settings[cmd] = not settings[cmd]
     chatMsg(cmd..L[" set to "]..(settings[cmd] and YES or NO))
     RegisterHooks()
@@ -1149,11 +1147,10 @@ SlashCmdList["ROLEICONS"] = function(msg)
     for c,_ in pairs(defaults) do
       usage = usage.." | "..c
     end
-    chatMsg(SLASH_ROLEICONS1.." [ check"..usage.." ]")
-    chatMsg("  "..SLASH_ROLEICONS1.." check  - "..L["Perform a role check (requires assist or leader)"])
-      for c,v in pairs(defaults) do
-        chatMsg("  "..SLASH_ROLEICONS1.." "..c.."  ["..
-        (settings[c] and "|cff00ff00"..YES or "|cffff0000"..NO).."|r] "..v[2])
+    chatMsg(SLASH_ROLEICONS1.." [ "..usage.." ]")
+    for c,v in pairs(defaults) do
+      chatMsg(" "..SLASH_ROLEICONS1.." "..c.."  ["..
+      (settings[c] and "|cff00ff00"..YES or "|cffff0000"..NO).."|r] "..v[2])
     end
   end
 end
