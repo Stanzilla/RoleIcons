@@ -8,7 +8,7 @@
 ## X-Build: @project-revision@
 ## X-ReleaseDate: @project-date-iso@
 ## X-Revision: $Revision$
-## SavedVariables: RoleIconsDB
+## SavedVariables: RoleIconsDB2
 ## LoadManagers: AddonLoader
 ## X-LoadOn-Always: delayed
 
