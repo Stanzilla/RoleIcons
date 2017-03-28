@@ -4,13 +4,13 @@ RoleIcons = vars
 local addon = RoleIcons
 local _G = getfenv(0)
 
--- GLOBALS: GameTooltip_Minimap_hook DEFAULT_CHAT_FRAME RAID_CLASS_COLORS RoleIcons RoleIconsDB
--- GLOBALS: SLASH_ROLEICONS1 SLASH_ROLECHECK1 GameTooltip GameTooltipTextLeft1 YES NO LEVEL RaidFrame RolePollPopup
+-- luacheck: globals GameTooltip_Minimap_hook DEFAULT_CHAT_FRAME RAID_CLASS_COLORS RoleIcons RoleIconsDB
+-- luacheck: globals SLASH_ROLEICONS1 SLASH_ROLECHECK1 GameTooltip GameTooltipTextLeft1 YES NO LEVEL RaidFrame RolePollPopup
 
 local string, table, pairs, ipairs, tonumber, wipe =
-      string, table, pairs, ipairs, tonumber, wipe
+  string, table, pairs, ipairs, tonumber, wipe
 local InCombatLockdown, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitIsGroupLeader, UnitIsGroupAssistant =
-      InCombatLockdown, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitIsGroupLeader, UnitIsGroupAssistant
+  InCombatLockdown, UnitGroupRolesAssigned, UnitName, UnitClass, UnitLevel, UnitIsPlayer, UnitIsGroupLeader, UnitIsGroupAssistant
 local defaults = {
   raid =         { true,  L["Show role icons on the Raid tab"] },
   tooltip =      { true,  L["Show role icons in player tooltips"] },
@@ -38,13 +38,13 @@ RoleIcons.unitstatus = {}
 RoleIcons.unitstatus.refresh = function() addon.UpdateRGF() end
 
 local chats = {
-	CHAT_MSG_SAY = 1, CHAT_MSG_YELL = 1,
-	CHAT_MSG_WHISPER = 1, CHAT_MSG_WHISPER_INFORM = 1,
-	CHAT_MSG_PARTY = 1, CHAT_MSG_PARTY_LEADER = 1,
-	CHAT_MSG_INSTANCE_CHAT = 1, CHAT_MSG_INSTANCE_CHAT_LEADER = 1,
-	CHAT_MSG_RAID = 1, CHAT_MSG_RAID_LEADER = 1, CHAT_MSG_RAID_WARNING = 1,
-	CHAT_MSG_BATTLEGROUND_LEADER = 1, CHAT_MSG_BATTLEGROUND = 1,
-	}
+  CHAT_MSG_SAY = 1, CHAT_MSG_YELL = 1,
+  CHAT_MSG_WHISPER = 1, CHAT_MSG_WHISPER_INFORM = 1,
+  CHAT_MSG_PARTY = 1, CHAT_MSG_PARTY_LEADER = 1,
+  CHAT_MSG_INSTANCE_CHAT = 1, CHAT_MSG_INSTANCE_CHAT_LEADER = 1,
+  CHAT_MSG_RAID = 1, CHAT_MSG_RAID_LEADER = 1, CHAT_MSG_RAID_WARNING = 1,
+  CHAT_MSG_BATTLEGROUND_LEADER = 1, CHAT_MSG_BATTLEGROUND = 1,
+}
 
 local TTframe, TTfunc
 
@@ -53,12 +53,12 @@ local riconsz = iconsz
 local role_tex_file = "Interface\\LFGFrame\\UI-LFG-ICON-PORTRAITROLES.blp"
 local role_t = "\124T"..role_tex_file..":%d:%d:"
 local role_tex = {
-   DAMAGER = role_t.."0:0:64:64:20:39:22:41\124t",
-   HEALER  = role_t.."0:0:64:64:20:39:1:20\124t",
-   TANK    = role_t.."0:0:64:64:0:19:22:41\124t",
-   LEADER  = role_t.."0:0:64:64:0:19:1:20\124t",
-   SPACE   = role_t.."0:0:64:64:0:0:0:0\124t",
-   NONE    = ""
+  DAMAGER = role_t.."0:0:64:64:20:39:22:41\124t",
+  HEALER  = role_t.."0:0:64:64:20:39:1:20\124t",
+  TANK    = role_t.."0:0:64:64:0:19:22:41\124t",
+  LEADER  = role_t.."0:0:64:64:0:19:1:20\124t",
+  SPACE   = role_t.."0:0:64:64:0:0:0:0\124t",
+  NONE    = ""
 }
 local function getRoleTex(role,size)
   local str = role_tex[role]
@@ -67,8 +67,8 @@ local function getRoleTex(role,size)
   role_tex[size] = role_tex[size] or {}
   str = role_tex[size][role]
   if not str then
-     str = string.format(role_tex[role], size, size)
-     role_tex[size][role] = str
+    str = string.format(role_tex[role], size, size)
+    role_tex[size][role] = str
   end
   return str
 end
@@ -81,30 +81,30 @@ local function getRoleTexCoord(role)
 end
 
 local function chatMsg(msg)
-     DEFAULT_CHAT_FRAME:AddMessage("|cff6060ff"..addonName.."|r: "..msg)
+  DEFAULT_CHAT_FRAME:AddMessage("|cff6060ff"..addonName.."|r: "..msg)
 end
 local function debug(msg)
   if settings and settings.debug then
-     chatMsg(msg)
+    chatMsg(msg)
   end
 end
 
 local function classColor(name, class, unit)
-   if not class then return name, nil, name end
-   local color = RAID_CLASS_COLORS[class]
-   color = color and color.colorStr
-   if unit and UnitExists(unit) then
-     if not UnitIsConnected(unit) then
-       color = "ff808080" -- grey
-     elseif UnitIsDeadOrGhost(unit) then
-       color = "ffff1919" -- red
-     end
-   end
-   local cname = name
-   if color then
-     cname = "\124c"..color..name.."\124r"
-   end
-   return cname, color, name
+  if not class then return name, nil, name end
+  local color = RAID_CLASS_COLORS[class]
+  color = color and color.colorStr
+  if unit and UnitExists(unit) then
+    if not UnitIsConnected(unit) then
+      color = "ff808080" -- grey
+    elseif UnitIsDeadOrGhost(unit) then
+      color = "ffff1919" -- red
+    end
+  end
+  local cname = name
+  if color then
+    cname = "\124c"..color..name.."\124r"
+  end
+  return cname, color, name
 end
 
 local server_prefixes = {
@@ -121,7 +121,7 @@ local function utfbytewidth(s,b)
 end
 local function trimServer(name, colorunit)
   local class = colorunit and (type(colorunit) == "string" and UnitExists(colorunit) and select(2,UnitClass(colorunit))) or
-		addon.classcache[name] or select(2,UnitClass(name))
+    addon.classcache[name] or select(2,UnitClass(name))
   name = name:gsub("%s","") -- remove space
   local cname, rname = name:match("^([^-]+)-([^-]+)$") -- split
   if not (cname and rname) then
@@ -168,12 +168,12 @@ local function toonList(role, class)
       if uname and uclass and ((not role) or (role and role == urole)) and ((not class) or (class and class == uclass)) then
         local cname = trimServer(uname, unitid)
         uname = uname:gsub("%s","")
-    	  table.insert(sorttemp,uname)
-    	  if not role and urole and urole ~= "NONE" then
-    	    cname = getRoleTex(urole)..cname
-    	  end
-    	  infotemp[uname] = cname
-    	  cnt = cnt + 1
+        table.insert(sorttemp,uname)
+        if not role and urole and urole ~= "NONE" then
+          cname = getRoleTex(urole)..cname
+        end
+        infotemp[uname] = cname
+        cnt = cnt + 1
       end
     end
   end
@@ -214,17 +214,17 @@ local function UpdateTT(tt, unit, ttline)
   local role = UnitGroupRolesAssigned(unit)
   local leader = GetNumGroupMembers() > 0 and UnitIsGroupLeader(unit)
   if (role and role ~= "NONE") or leader then
-     local name = tt:GetName()
-     local line = ttline or _G[name.."TextLeft1"]
-     if line and line.GetText then
-       local txt = line:GetText()
-       if txt and not string.find(txt,role_tex_file,1,true) then
-         if leader then
-           txt = getRoleTex("LEADER",iconsz)..txt
-         end
-         line:SetText(getRoleTex(role,iconsz)..txt)
-       end
-     end
+    local name = tt:GetName()
+    local line = ttline or _G[name.."TextLeft1"]
+    if line and line.GetText then
+      local txt = line:GetText()
+      if txt and not string.find(txt,role_tex_file,1,true) then
+        if leader then
+          txt = getRoleTex("LEADER",iconsz)..txt
+        end
+        line:SetText(getRoleTex(role,iconsz)..txt)
+      end
+    end
   end
 end
 
@@ -359,19 +359,19 @@ end
 local function UpdateRGF()
   if not RaidFrame then return end
   if UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") then
-     if not addon.rolecheckbtn and RaidFrameRaidInfoButton and RaidFrameAllAssistCheckButton then
-       local btn = CreateFrame("Button", "RaidIconsRoleCheckBtn", RaidFrame, "UIPanelButtonTemplate")
-       btn:SetSize(RaidFrameRaidInfoButton:GetSize())
-       btn:SetText(ROLE_POLL)
-       btn:SetPoint("BOTTOMLEFT", RaidFrameAllAssistCheckButton, "TOPLEFT", 0, 2)
-       btn:SetScript("OnClick", function() InitiateRolePoll() end)
-       btn:SetNormalFontObject(GameFontNormalSmall)
-       btn:SetHighlightFontObject(GameFontHighlightSmall)
-       addon.rolecheckbtn = btn
-     end
-     addon.rolecheckbtn:Show()
+    if not addon.rolecheckbtn and RaidFrameRaidInfoButton and RaidFrameAllAssistCheckButton then
+      local btn = CreateFrame("Button", "RaidIconsRoleCheckBtn", RaidFrame, "UIPanelButtonTemplate")
+      btn:SetSize(RaidFrameRaidInfoButton:GetSize())
+      btn:SetText(ROLE_POLL)
+      btn:SetPoint("BOTTOMLEFT", RaidFrameAllAssistCheckButton, "TOPLEFT", 0, 2)
+      btn:SetScript("OnClick", function() InitiateRolePoll() end)
+      btn:SetNormalFontObject(GameFontNormalSmall)
+      btn:SetHighlightFontObject(GameFontHighlightSmall)
+      addon.rolecheckbtn = btn
+    end
+    addon.rolecheckbtn:Show()
   elseif addon.rolecheckbtn then
-     addon.rolecheckbtn:Hide()
+    addon.rolecheckbtn:Hide()
   end
   wipe(classcnt)
   wipe(rolecnt)
@@ -381,10 +381,10 @@ local function UpdateRGF()
     local btn = _G["RaidGroupButton"..i]
     if btn then
       if not addon.deftexture then
-         addon.deftexture = btn:GetNormalTexture():GetTexture()
+        addon.deftexture = btn:GetNormalTexture():GetTexture()
       end
       if addon.deftexture then
-         btn:GetNormalTexture():SetTexture(addon.deftexture)
+        btn:GetNormalTexture():SetTexture(addon.deftexture)
       end
     end
     if btn and btn.unit and btn.subframes and btn.subframes.level and btn:IsVisible() then
@@ -452,9 +452,9 @@ local function UpdateRGF()
           end
         end)
         btn:HookScript("OnClick", function(self, button)
-      	  if button == "MiddleButton" then
+          if button == "MiddleButton" then
             ShowRoleMenu(self)
-      	  end
+          end
         end)
         addon.btnhook[btn] = true
       end
@@ -480,22 +480,22 @@ local function UpdateRGF()
       local class = btn.class
       local count = classcnt[class]
       if settings.classbuttons and UnitInRaid("player") and i <= MAX_CLASSES and not RaidInfoFrame:IsShown() then
-          btn:Show()
-          local icon = _G[btn:GetName().."IconTexture"]
-          local fs = _G[btn:GetName().."Count"]
-   	if count and count > 0 then
-  	  fs:SetTextHeight(12) -- got too small in 5.x for some reason
-  	  fs:SetText(count)
-  	  fs:Show()
-  	  icon:SetAlpha(1)
-  	  SetItemButtonDesaturated(btn, nil)
-  	else
-  	  fs:Hide()
-  	  icon:SetAlpha(0.5)
-  	  SetItemButtonDesaturated(btn, true)
-  	end
+        btn:Show()
+        local icon = _G[btn:GetName().."IconTexture"]
+        local fs = _G[btn:GetName().."Count"]
+        if count and count > 0 then
+          fs:SetTextHeight(12) -- got too small in 5.x for some reason
+          fs:SetText(count)
+          fs:Show()
+          icon:SetAlpha(1)
+          SetItemButtonDesaturated(btn, nil)
+        else
+          fs:Hide()
+          icon:SetAlpha(0.5)
+          SetItemButtonDesaturated(btn, true)
+        end
       else
-          btn:Hide()
+        btn:Hide()
       end
     end
   end
@@ -542,8 +542,8 @@ function addon:UpdateServers(intt, groupjoin)
     if name and level then
       if islead and level == 0 and name == UNKNOWN and addon.inviteleader then
         -- leader info can be delayed on cross-realm invite
-	      name, realm = addon.inviteleader:match("^([^-]+)-([^-]+)$")
-	      if not name then
+        name, realm = addon.inviteleader:match("^([^-]+)-([^-]+)$")
+        if not name then
           name = addon.inviteleader
         end -- same realm
       end
@@ -574,8 +574,8 @@ function addon:UpdateServers(intt, groupjoin)
       end
       if groupjoin and islead then
         -- joined a new group, default to assuming we are on leader's realm
-	debug("leader lastServer = "..realm)
-	addon.lastServer = r
+        debug("leader lastServer = "..realm)
+        addon.lastServer = r
       end
     end
   end
@@ -587,28 +587,28 @@ function addon:UpdateServers(intt, groupjoin)
   end
 
   if not addon.serverFrame then
-      addon.serverFrame = CreateFrame("Button", addonName.."ServerButton", RaidFrame, "InsetFrameTemplate3")
-      addon.serverFrame:ClearAllPoints()
-      addon.serverFrame:SetPoint("TOPRIGHT",RaidFrame,-27,-2)
-      addon.serverFrame:SetSize(125,20)
-      addon.serverText = addon.serverFrame:CreateFontString(nil,"ARTWORK","GameFontNormalSmall")
-      addon.serverText:SetPoint("LEFT",addon.serverFrame,10,0)
-      addon.serverFrame:SetScript("OnEnter", function() DisplayServerTooltip() end)
-      addon.serverFrame:SetScript("OnLeave", function() TTframe = nil; GameTooltip:Hide() end)
-      addon.serverFrame:SetScript("OnClick", function()
-        local str = addon:ServerChatString()
-	local chat
-	if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
-	  chat = "INSTANCE_CHAT"
-	elseif IsInRaid() then
-	  chat = "RAID"
-	elseif IsInGroup() then
-	  chat = "PARTY"
-	else
-	  return
-	end
-	SendChatMessage(str, chat)
-     end)
+    addon.serverFrame = CreateFrame("Button", addonName.."ServerButton", RaidFrame, "InsetFrameTemplate3")
+    addon.serverFrame:ClearAllPoints()
+    addon.serverFrame:SetPoint("TOPRIGHT",RaidFrame,-27,-2)
+    addon.serverFrame:SetSize(125,20)
+    addon.serverText = addon.serverFrame:CreateFontString(nil,"ARTWORK","GameFontNormalSmall")
+    addon.serverText:SetPoint("LEFT",addon.serverFrame,10,0)
+    addon.serverFrame:SetScript("OnEnter", function() DisplayServerTooltip() end)
+    addon.serverFrame:SetScript("OnLeave", function() TTframe = nil; GameTooltip:Hide() end)
+    addon.serverFrame:SetScript("OnClick", function()
+      local str = addon:ServerChatString()
+      local chat
+      if IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then
+        chat = "INSTANCE_CHAT"
+      elseif IsInRaid() then
+        chat = "RAID"
+      elseif IsInGroup() then
+        chat = "PARTY"
+      else
+        return
+      end
+      SendChatMessage(str, chat)
+    end)
   end
   local list = wipe(addon.serverList or {})
   addon.serverList = list
@@ -629,34 +629,34 @@ function addon:UpdateServers(intt, groupjoin)
     local curr = list[1].name
     local color
     if old and old.unknownlevel and old.num > 0 then
-       debug("level info missing for a group member on lastserver, suppressing possible transfer")
-       color = "|cffff1919" -- red
-       curr = old.name
+      debug("level info missing for a group member on lastserver, suppressing possible transfer")
+      color = "|cffff1919" -- red
+      curr = old.name
     elseif list[1].maxlevel > list[2].maxlevel or
-       list[1].num >= list[2].num + 2 then
-       color = "|cff19ff19" -- green
-       addon.lastServer = list[1]
+      list[1].num >= list[2].num + 2 then
+      color = "|cff19ff19" -- green
+      addon.lastServer = list[1]
     elseif list[1].num == list[2].num + 1 and old == list[2] and list[1].unknownlevel then
-       debug("level info missing for a group member on newserver, suppressing possible transfer")
-       color = "|cffff1919" -- red
-       curr = old.name
+      debug("level info missing for a group member on newserver, suppressing possible transfer")
+      color = "|cffff1919" -- red
+      curr = old.name
     elseif list[1].num >= list[2].num + 1 then
-       color = "|cffffff00" -- yellow
-       addon.lastServer = list[1]
+      color = "|cffffff00" -- yellow
+      addon.lastServer = list[1]
     else
-       color = "|cffff1919" -- red
-       if old and not select(2,SortServers(list[1],old)) then
-         curr = old.name
-       else
-	 curr = curr.." ?"
-	 addon.lastServer = nil
-       end
+      color = "|cffff1919" -- red
+      if old and not select(2,SortServers(list[1],old)) then
+        curr = old.name
+      else
+        curr = curr.." ?"
+        addon.lastServer = nil
+      end
     end
     local new = addon.lastServer
     if settings.serverinfo and not IsInInstance() and new and old and new ~= old then
       debug(L["Probable realm transfer"]..": "..
-              old.name.." ("..old.num.." "..L["Players"].." / "..LEVEL.." "..old.maxlevel..")  ->  "..
-              new.name.." ("..new.num.." "..L["Players"].." / "..LEVEL.." "..new.maxlevel..")")
+        old.name.." ("..old.num.." "..L["Players"].." / "..LEVEL.." "..old.maxlevel..")  ->  "..
+        new.name.." ("..new.num.." "..L["Players"].." / "..LEVEL.." "..new.maxlevel..")")
     end
     addon.serverText:SetText(color..curr.."|r")
     if settings.serverinfo then
@@ -669,7 +669,7 @@ function addon:UpdateServers(intt, groupjoin)
     settings.state.lastServer = addon.lastServer and addon.lastServer.name
   end
   if not intt and TTframe and TTfunc and GameTooltip:IsShown() and GameTooltip:GetOwner() == TTframe then -- dynamically update tooltip
-     TTfunc(TTframe)
+    TTfunc(TTframe)
   end
 end
 
@@ -702,16 +702,16 @@ end
 -- messages that need special handling
 table.insert(system_scan, (patconvert(ERR_PARTY_LFG_BOOT_VOTE_REGISTERED):gsub("%%%d?%$?d.+$","")))
 table.insert(system_msgs, false)
-      -- "Your request to kick %s has been successfully received. %d |4more request is:more requests are; needed to initiate a vote.";
+-- "Your request to kick %s has been successfully received. %d |4more request is:more requests are; needed to initiate a vote.";
 local icon_scan = patconvert(TARGET_ICON_SET:gsub("[%[%]%-]",".")):gsub("%%%d?%$?d","(%%d+)")
 local icon_msg = TARGET_ICON_SET:gsub("\124Hplayer.+\124h","%%s"):gsub("%%%d?%$?[ds]","%%s")
-      -- "|Hplayer:%s|h[%s]|h sets |TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t on %s."
+-- "|Hplayer:%s|h[%s]|h sets |TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t on %s."
 
 function addon:formatToon(toon, nolink, spacenone)
   if not toon then return end
   toon = GetUnitName(toon, true) or toon -- ensure name is fully-qualified
   if not addon.classcache[toon] and
-     not (UnitExists(toon) and (UnitInRaid(toon) or UnitInParty(toon))) then return toon end
+    not (UnitExists(toon) and (UnitInRaid(toon) or UnitInParty(toon))) then return toon end
   local role = UnitGroupRolesAssigned(toon)
   if role == "NONE" then role = addon.rolecache[toon] end -- use cache if player just left raid
   local cname,color,name = trimServer(toon, true)
@@ -722,9 +722,9 @@ function addon:formatToon(toon, nolink, spacenone)
     cname = string.format("[%s%s\124Hplayer:%s:0\124h%s\124h%s]", color and "\124c" or "", color or "", toon, name, color and "\124r" or "")
   end
   if (role and role ~= "NONE") then
-     cname = getRoleTex(role,0)..cname
+    cname = getRoleTex(role,0)..cname
   elseif spacenone then
-     cname = getRoleTex("SPACE",0)..cname
+    cname = getRoleTex("SPACE",0)..cname
   end
   return cname
 end
@@ -740,16 +740,16 @@ end
 local function SystemMessageFilter(self, event, message, ...)
   if not settings.system then return false end
   if oRA3 and not addon.oRA3hooked then -- oRA3 sends a fake system message when not promoted, catch that too
-     local oral = LibStub("AceLocale-3.0", true)
-     oral = oral and oral:GetLocale("oRA3", true)
-     oral = oral and oral["The following players are not ready: %s"]
-     if oral then
-       table.insert(system_msgs, oral)
-       table.insert(system_scan, patconvert(oral))
-       addon.oRA3hooked = true
-     end
-     local rc = oRA3:GetModule("ReadyCheck",true)
-     if rc then rc.stripservers = false end -- tell oRA3 not to strip realms from fake server messages
+    local oral = LibStub("AceLocale-3.0", true)
+    oral = oral and oral:GetLocale("oRA3", true)
+    oral = oral and oral["The following players are not ready: %s"]
+    if oral then
+      table.insert(system_msgs, oral)
+      table.insert(system_scan, patconvert(oral))
+      addon.oRA3hooked = true
+    end
+    local rc = oRA3:GetModule("ReadyCheck",true)
+    if rc then rc.stripservers = false end -- tell oRA3 not to strip realms from fake server messages
   end
   if event == "CHAT_MSG_TARGETICONS" then -- special handling for icon message
     local _, src, id, dst = message:match(icon_scan)
@@ -765,7 +765,7 @@ local function SystemMessageFilter(self, event, message, ...)
     if names then
       local newnames = ""
       for toon in string.gmatch(names, "[^,%s]+") do
-	newnames = newnames..(#newnames > 0 and ", " or "")..addon:formatToon(toon)
+        newnames = newnames..(#newnames > 0 and ", " or "")..addon:formatToon(toon)
       end
       if msg then -- re-print
         return false, msg:format(newnames), ...
@@ -802,7 +802,7 @@ local function UnitPopup_hook(menu, which, unit, name, userData)
   local role = UnitGroupRolesAssigned(unit or name)
   if not role or role == "NONE" then role = addon.rolecache[name] end
   local class = (unit and UnitExists(unit) and select(2,UnitClass(unit))) or
-		addon.classcache[name] or select(2,UnitClass(name))
+    addon.classcache[name] or select(2,UnitClass(name))
   debug("name="..name.." unit="..tostring(unit).." class="..tostring(class).." role="..tostring(role))
   local cname = classColor(name, class, unit)
   if (role and role ~= "NONE") then
@@ -849,9 +849,9 @@ end
 
 function GameTooltip_Minimap_hook()
   if not settings.map or
-     not GameTooltip:IsShown() or
-     GameTooltip:GetOwner() ~= Minimap or
-     GameTooltip:NumLines() ~= 1 then return end
+    not GameTooltip:IsShown() or
+    GameTooltip:GetOwner() ~= Minimap or
+    GameTooltip:NumLines() ~= 1 then return end
   local otext = GameTooltipTextLeft1 and GameTooltipTextLeft1:GetText()
   if not otext or #otext == 0 then return end
   local text = "\n"..otext.."\n"
@@ -884,7 +884,7 @@ local function GetColoredName_hook(event, arg1, arg2, ...)
       role = UnitGroupRolesAssigned(arg2:gsub(" *-[^-]+$",""))
     end
     if (role and role ~= "NONE") then
-        ret = getRoleTex(role,0)..""..ret
+      ret = getRoleTex(role,0)..""..ret
     end
   end
   return ret
@@ -935,89 +935,89 @@ local function RegisterHooks()
   end
 
   if false and settings.raid and not reg["upm"] then
-     -- add the set role menu to the raid screen popup CAUSES TAINT
-     table.insert(UnitPopupMenus["RAID"],1,"SELECT_ROLE")
-     reg["upm"] = true
+    -- add the set role menu to the raid screen popup CAUSES TAINT
+    table.insert(UnitPopupMenus["RAID"],1,"SELECT_ROLE")
+    reg["upm"] = true
   end
   if false and settings.chat and not reg["chats"] then
-     for c,_ in pairs(chats) do
-       ChatFrame_AddMessageEventFilter(c, ChatFilter)
-     end
-     reg["chats"] = true
+    for c,_ in pairs(chats) do
+      ChatFrame_AddMessageEventFilter(c, ChatFilter)
+    end
+    reg["chats"] = true
   end
 
   if settings.chat and GetColoredName and not reg["gcn"] then
-     GetColoredName_orig = _G.GetColoredName
-     _G.GetColoredName = GetColoredName_hook
-     reg["gcn"] = true
+    GetColoredName_orig = _G.GetColoredName
+    _G.GetColoredName = GetColoredName_hook
+    reg["gcn"] = true
   end
   if settings.system and not reg["syschats"] then
-     ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", SystemMessageFilter)
-     ChatFrame_AddMessageEventFilter("CHAT_MSG_TARGETICONS", SystemMessageFilter)
-     reg["syschats"] = true
+    ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", SystemMessageFilter)
+    ChatFrame_AddMessageEventFilter("CHAT_MSG_TARGETICONS", SystemMessageFilter)
+    reg["syschats"] = true
   end
   if settings.system and RoleChangedFrame and not reg["rolechange"] then
-     RoleChangedFrame:SetScript("OnEvent", RoleChangedFrame_OnEvent_hook)
-     reg["rolechange"] = true
+    RoleChangedFrame:SetScript("OnEvent", RoleChangedFrame_OnEvent_hook)
+    reg["rolechange"] = true
   end
   if settings.popup and UnitPopup_ShowMenu and not reg["popup"] then
-     hooksecurefunc("UnitPopup_ShowMenu", UnitPopup_hook)
-     reg["popup"] = true
+    hooksecurefunc("UnitPopup_ShowMenu", UnitPopup_hook)
+    reg["popup"] = true
   end
   if settings.map and WorldMapUnit_OnEnter and not reg["map"] then
-     hooksecurefunc("WorldMapUnit_OnEnter", WorldMapUnit_OnEnter_hook)
+    hooksecurefunc("WorldMapUnit_OnEnter", WorldMapUnit_OnEnter_hook)
 
-     -- minimap tooltips are set and shown from C code and cannot be directly hooked
-     -- intead we hook the events they trigger
-     GameTooltip:HookScript("OnShow", GameTooltip_Minimap_hook)
-     GameTooltip:HookScript("OnSizeChanged", GameTooltip_Minimap_hook)
-     reg["map"] = true
+    -- minimap tooltips are set and shown from C code and cannot be directly hooked
+    -- intead we hook the events they trigger
+    GameTooltip:HookScript("OnShow", GameTooltip_Minimap_hook)
+    GameTooltip:HookScript("OnSizeChanged", GameTooltip_Minimap_hook)
+    reg["map"] = true
   end
   if settings.classbuttons and not addon.classbuttons
-      and RaidClassButton1 then -- for RaidClassButtonTemplate
-      addon.classbuttons = {}
-      local function rcb_onenter(self)
-	local class = self.class
-	local lclass = class and LC[class]
-	GameTooltip:SetOwner(self)
-        TTframe = self
-        TTfunc = rcb_onenter
-	if class and lclass then
-	  local list, cnt = toonList(nil, class)
-	  GameTooltip:ClearLines()
-	  GameTooltip:SetText(classColor(lclass,class).." ("..cnt..")")
-	  GameTooltip:AddLine(list,1,1,1,true)
-	  GameTooltip:Show()
-	end
-	GameTooltip:ClearAllPoints()
-	GameTooltip:SetPoint("BOTTOMLEFT",self,"TOPRIGHT")
+    and RaidClassButton1 then -- for RaidClassButtonTemplate
+    addon.classbuttons = {}
+    local function rcb_onenter(self)
+      local class = self.class
+      local lclass = class and LC[class]
+      GameTooltip:SetOwner(self)
+      TTframe = self
+      TTfunc = rcb_onenter
+      if class and lclass then
+        local list, cnt = toonList(nil, class)
+        GameTooltip:ClearLines()
+        GameTooltip:SetText(classColor(lclass,class).." ("..cnt..")")
+        GameTooltip:AddLine(list,1,1,1,true)
+        GameTooltip:Show()
       end
-      for i = 1,MAX_CLASSES do -- squeeze layout to make everything fit
-        local rcb = CreateFrame("Button", addonName.."RaidClassButton"..i, RaidFrame, "RaidClassButtonTemplate")
-	addon.classbuttons[i] = rcb
-	rcb:SetSize(20,20)
-	rcb:SetScript("OnEnter",rcb_onenter)
-	local bkg = rcb:GetRegions() -- background graphic is off-center and needs to be slid up
-	bkg:ClearAllPoints()
-	--bkg:SetPoint("TOPLEFT",0,7)
-	bkg:SetPoint("TOPLEFT",-2,7)
-	-- more init fixups
-	rcb.class = CLASS_SORT_ORDER[i]
-	local icon = _G[rcb:GetName().."IconTexture"]
-	icon:SetAllPoints()
-	icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes");
-        icon:SetTexCoord(unpack(CLASS_ICON_TCOORDS[rcb.class]))
-      end
-      local lastrcb = addon.classbuttons[MAX_CLASSES]
-      lastrcb:ClearAllPoints()
-      lastrcb:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",1,10)
-      for i = MAX_CLASSES-1,1,-1 do -- squeeze layout to make everything fit
-        local rcb = addon.classbuttons[i]
-        rcb:ClearAllPoints()
-        rcb:SetPoint("BOTTOM",lastrcb,"TOP",0,6) -- spacing
-	rcb:Show()
-        lastrcb = rcb
-      end
+      GameTooltip:ClearAllPoints()
+      GameTooltip:SetPoint("BOTTOMLEFT",self,"TOPRIGHT")
+    end
+    for i = 1,MAX_CLASSES do -- squeeze layout to make everything fit
+      local rcb = CreateFrame("Button", addonName.."RaidClassButton"..i, RaidFrame, "RaidClassButtonTemplate")
+      addon.classbuttons[i] = rcb
+      rcb:SetSize(20,20)
+      rcb:SetScript("OnEnter",rcb_onenter)
+      local bkg = rcb:GetRegions() -- background graphic is off-center and needs to be slid up
+      bkg:ClearAllPoints()
+      --bkg:SetPoint("TOPLEFT",0,7)
+      bkg:SetPoint("TOPLEFT",-2,7)
+      -- more init fixups
+      rcb.class = CLASS_SORT_ORDER[i]
+      local icon = _G[rcb:GetName().."IconTexture"]
+      icon:SetAllPoints()
+      icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes");
+      icon:SetTexCoord(unpack(CLASS_ICON_TCOORDS[rcb.class]))
+    end
+    local lastrcb = addon.classbuttons[MAX_CLASSES]
+    lastrcb:ClearAllPoints()
+    lastrcb:SetPoint("BOTTOMLEFT",RaidFrame,"BOTTOMRIGHT",1,10)
+    for i = MAX_CLASSES-1,1,-1 do -- squeeze layout to make everything fit
+      local rcb = addon.classbuttons[i]
+      rcb:ClearAllPoints()
+      rcb:SetPoint("BOTTOM",lastrcb,"TOP",0,6) -- spacing
+      rcb:Show()
+      lastrcb = rcb
+    end
   end
   if settings.rolebuttons and not addon.rolebuttons and RaidClassButton1 then -- for RaidClassButtonTemplate
     addon.rolebuttons = {}
@@ -1037,13 +1037,13 @@ local function RegisterHooks()
       btn:SetScript("OnLoad",function(self) end)
       local function ttfn(self)
         --GameTooltip_SetDefaultAnchor(GameTooltip, UIParent);
-	      GameTooltip:SetOwner(self)
+        GameTooltip:SetOwner(self)
         TTframe = self
         TTfunc = ttfn
-	      GameTooltip:SetAnchorType("ANCHOR_RIGHT")
+        GameTooltip:SetAnchorType("ANCHOR_RIGHT")
         GameTooltip:SetText(getRoleTex(role).._G[role] .. " ("..(btn.rolecnt or 0)..")")
         GameTooltip:AddLine(toonList(role),1,1,1,true)
-	      GameTooltip:Show()
+        GameTooltip:Show()
       end
       btn:SetScript("OnEnter", ttfn)
       btn:SetScript("OnUpdate", function(self) self:SetFrameLevel(500) end) -- prevent adjacent panel edge from obscuring
@@ -1064,61 +1064,61 @@ local function RegisterHooks()
     addon.rolebuttons["TANK"]:SetPoint("TOPLEFT", FriendsFrameCloseButton, "BOTTOMRIGHT",-1,8)
   end
   if RolePollPopup and not reg["rpp"] then
-     addon.rppevent = RolePollPopup:GetScript("OnEvent")
-     if addon.rppevent then
-       RolePollPopup:SetScript("OnEvent", function(self, event, ...)
-         if settings.autorole and
-	    UnitGroupRolesAssigned("player") ~= "NONE" and
-	    event == "ROLE_POLL_BEGIN" then
-	   debug("suppressed a RolePollPopup")
-	 else
-	   addon.rppevent(self, event, ...)
-	 end
-       end)
-       reg["rpp"] = true
-     end
+    addon.rppevent = RolePollPopup:GetScript("OnEvent")
+    if addon.rppevent then
+      RolePollPopup:SetScript("OnEvent", function(self, event, ...)
+        if settings.autorole and
+          UnitGroupRolesAssigned("player") ~= "NONE" and
+          event == "ROLE_POLL_BEGIN" then
+          debug("suppressed a RolePollPopup")
+        else
+          addon.rppevent(self, event, ...)
+        end
+      end)
+      reg["rpp"] = true
+    end
   end
 end
 
 local function OnEvent(frame, event, name, ...)
   if event == "ADDON_LOADED" and string.upper(name) == string.upper(addonName) then
-     debug("ADDON_LOADED: "..name)
-     RoleIconsDB = RoleIconsDB or {}
-     settings = RoleIconsDB
-     for k,v in pairs(defaults) do
-       if settings[k] == nil then
-         settings[k] = defaults[k][1]
-       end
-     end
-     settings.state = settings.state or {}
-     RegisterHooks()
-     addon:UpdateServers()
+    debug("ADDON_LOADED: "..name)
+    RoleIconsDB = RoleIconsDB or {}
+    settings = RoleIconsDB
+    for k,v in pairs(defaults) do
+      if settings[k] == nil then
+        settings[k] = defaults[k][1]
+      end
+    end
+    settings.state = settings.state or {}
+    RegisterHooks()
+    addon:UpdateServers()
   elseif event == "ADDON_LOADED" then
-     debug("ADDON_LOADED: "..name)
-     RegisterHooks()
+    debug("ADDON_LOADED: "..name)
+    RegisterHooks()
   elseif event == "PLAYER_TARGET_CHANGED" then
-     UpdateTarget("target")
+    UpdateTarget("target")
   elseif event == "PLAYER_FOCUS_CHANGED" then
-     UpdateTarget("focus")
+    UpdateTarget("focus")
   elseif event == "ROLE_POLL_BEGIN" or
-         event == "GROUP_ROSTER_UPDATE" or
-	       event == "ACTIVE_TALENT_GROUP_CHANGED" or
-	       event == "PLAYER_REGEN_ENABLED" then
-     UpdateTarget("target")
-     UpdateTarget("focus")
-     if settings.autorole and not InCombatLockdown() then
-       local currrole = UnitGroupRolesAssigned("player")
-       if (currrole == "NONE" and event ~= "ACTIVE_TALENT_GROUP_CHANGED") or
-          (currrole ~= "NONE" and event == "ACTIVE_TALENT_GROUP_CHANGED") then
-         local role = myDefaultRole()
-	        if role and role ~= "NONE" then
-           debug(event.." setting "..role)
-           UnitSetRole("player", role)
-           --RolePollPopup:Hide()
-           StaticPopupSpecial_Hide(RolePollPopup) -- ticket 4
-         end
-       end
-     end
+    event == "GROUP_ROSTER_UPDATE" or
+    event == "ACTIVE_TALENT_GROUP_CHANGED" or
+    event == "PLAYER_REGEN_ENABLED" then
+    UpdateTarget("target")
+    UpdateTarget("focus")
+    if settings.autorole and not InCombatLockdown() then
+      local currrole = UnitGroupRolesAssigned("player")
+      if (currrole == "NONE" and event ~= "ACTIVE_TALENT_GROUP_CHANGED") or
+        (currrole ~= "NONE" and event == "ACTIVE_TALENT_GROUP_CHANGED") then
+        local role = myDefaultRole()
+        if role and role ~= "NONE" then
+          debug(event.." setting "..role)
+          UnitSetRole("player", role)
+          --RolePollPopup:Hide()
+          StaticPopupSpecial_Hide(RolePollPopup) -- ticket 4
+        end
+      end
+    end
   end
   if event == "PARTY_INVITE_REQUEST" then
     addon.inviteleader = name
@@ -1150,7 +1150,7 @@ SlashCmdList["ROLEICONS"] = function(msg)
     chatMsg(SLASH_ROLEICONS1.." [ "..usage.." ]")
     for c,v in pairs(defaults) do
       chatMsg(" "..SLASH_ROLEICONS1.." "..c.."  ["..
-      (settings[c] and "|cff00ff00"..YES or "|cffff0000"..NO).."|r] "..v[2])
+        (settings[c] and "|cff00ff00"..YES or "|cffff0000"..NO).."|r] "..v[2])
     end
   end
 end
