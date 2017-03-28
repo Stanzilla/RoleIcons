@@ -1,5 +1,5 @@
-## Interface: 70100
-## Title: RoleIcons
+## Interface: 70200
+## Title: RoleIcons vStan
 ## Notes: Adds party/raid role icons in useful places
 ## Notes-zhTW: 在有用的地方加上隊伍/團隊角色圖示。
 ## Notes-zhCN: 在有用的地方添加队伍/团队角色图示。
@@ -14,4 +14,3 @@
 
 locale.lua
 RoleIcons.lua
-
