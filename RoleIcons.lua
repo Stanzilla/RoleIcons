@@ -28,7 +28,7 @@ local defaults = {
   map =          { true,  L["Show role icons in map tooltips"] },
 }
 local settings
-local maxlvl = MAX_PLAYER_LEVEL_TABLE[#MAX_PLAYER_LEVEL_TABLE]
+local maxlvl = GetMaxLevelForPlayerExpansion()
 vars.svnrev = {}
 vars.svnrev["RoleIcons.lua"] = 42
 

@@ -1,4 +1,4 @@
-## Interface: 70300
+## Interface: 90001
 ## Title: RoleIcons vStan
 ## Notes: Adds party/raid role icons in useful places
 ## Notes-zhTW: 在有用的地方加上隊伍/團隊角色圖示。
